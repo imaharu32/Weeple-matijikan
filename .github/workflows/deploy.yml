@@ -39,8 +39,7 @@ jobs:
       - name: ⬆️ Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
-          # CRA のビルド成果物（静的サイト）をアップロードする
-          # → Create React App の出力はデフォルトで ./build
+          # Create React App の出力ディレクトリを指定（ここが公開されます）
           path: ./build
 
   # buildジョブが成功した後に実行される
