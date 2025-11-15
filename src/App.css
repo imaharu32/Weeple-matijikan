@@ -36,3 +36,409 @@
     transform: rotate(360deg);
   }
 }
+
+.add-form {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	max-width: 640px;
+}
+
+.add-form-row {
+	display: flex;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.add-form-label {
+	min-width: 60px;
+	font-weight: 600;
+}
+
+.size-input {
+	width: 96px;
+	font-size: 1.1rem;
+	padding: 8px;
+	border-radius: 6px;
+	border: 1px solid #ddd;
+}
+
+.note-input {
+	flex: 1;
+	min-width: 220px;
+	font-size: 1rem;
+	padding: 8px;
+	border-radius: 6px;
+	border: 1px solid #ddd;
+	resize: vertical;
+}
+
+.add-form-actions {
+	margin-top: 6px;
+}
+
+button.primary {
+	background: #2b7cff;
+	color: white;
+	border: none;
+	padding: 8px 12px;
+	border-radius: 6px;
+	cursor: pointer;
+}
+
+button.secondary {
+	background: #f3f4f6;
+	border: 1px solid #e0e0e0;
+	padding: 8px 10px;
+	border-radius: 6px;
+	cursor: pointer;
+}
+
+/* cards */
+.card {
+	display: flex;
+	align-items: flex-start;
+	gap: 12px;
+	padding: 12px;
+	border-radius: 8px;
+	background: #fff;
+	box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+	border: 1px solid #f0f0f0;
+	margin-bottom: 10px;
+	width: 100%;
+	box-sizing: border-box;
+}
+
+.card-left {
+	flex: 0 0 56px; /* バッジ領域を少し小さめにして本文を広くする */
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.badge {
+	background: rgba(245,247,251,0.95);
+	color: #333;
+	font-weight: 700;
+	padding: 8px 12px;
+	border-radius: 20px;
+	border: 1px solid rgba(230,238,251,0.9);
+}
+
+.inside-badge {
+	background: #fff4e6;
+	border-color: #ffe7c4;
+}
+
+.card-body {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.party-note {
+	font-size: 0.98rem;
+	font-weight: 600;
+	color: #222;
+}
+
+.meta {
+	font-size: 0.85rem;
+	color: #666;
+}
+
+.estimate {
+	font-size: 0.9rem;
+	color: #4a4a4a;
+	font-weight: 600;
+}
+
+.card-actions {
+	margin-top: 6px;
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.queue-list ul,
+.inside-list ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+/* layout tweak */
+.queue-list {
+	margin-bottom: 12px;
+}
+
+.inside-list {
+	margin-bottom: 12px;
+}
+
+/* queue 用: わずかに青みがかった薄背景 */
+.queue-card {
+	/* 背景を軽いグラデーションで付与 */
+	background: linear-gradient(180deg, #f7fbff 0%, #ffffff 100%);
+	/* ボーダーを淡い青寄りに */
+	border-color: #e6f3ff;
+}
+
+/* inside 用: 暖色系の薄背景 */
+.inside-card {
+	background: linear-gradient(180deg, #fffaf1 0%, #ffffff 100%);
+	border-color: #fff0d9;
+}
+
+/* カード内の影・境界を少し柔らかく（必要なら上書き） */
+.card {
+	/* 境界の柔らかさを少し増すための上書き */
+	box-shadow: 0 1px 6px rgba(0,0,0,0.06);
+}
+
+/* カードをカラム幅にフィットさせる */
+.card {
+	width: 100%;
+	box-sizing: border-box;
+}
+
+/* 左右カラム内のリストの max-width を明示（冗長ではあるが安定化のため） */
+.queue-list, .inside-list {
+	width: 100%;
+}
+
+/* カード内のバランスを微調整（任意） */
+.card-left {
+	flex: 0 0 56px; /* バッジ領域を少し小さめにして本文を広くする */
+}
+
+/* レスポンシブ：狭い画面では縦に並べる */
+@media (max-width: 720px) {
+	.main-columns {
+		flex-direction: column;
+		height: auto;
+	}
+	.column {
+		overflow: visible;
+	}
+}
+
+/* メインの左右カラムを画面いっぱいに並べる */
+.main-columns {
+	display: flex;
+	gap: 24px;
+	/* ヘッダー＋フッター分を差し引いた高さ（必要に応じて調整） */
+	height: calc(100vh - 180px);
+	align-items: flex-start;
+}
+
+/* 各カラムは同じ幅でスクロール可能に */
+.column {
+	flex: 1;
+	overflow-y: auto;
+	padding: 8px 6px;
+	box-sizing: border-box;
+}
+
+/* 右上の追加ボタン（大きめ・丸め・目立たせる） */
+.add-button {
+	position: absolute;
+	right: 16px;
+	top: 8px;
+	background: linear-gradient(180deg, #3b82f6, #2563eb);
+	color: #fff;
+	border: none;
+	padding: 12px 18px;
+	font-size: 16px;
+	font-weight: 700;
+	border-radius: 999px; /* pill */
+	cursor: pointer;
+	box-shadow: 0 6px 20px rgba(37,99,235,0.18);
+	transition: transform 120ms ease, box-shadow 120ms ease;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* アイコンやテキストがあれば中央揃えで見栄え良く */
+.add-button svg {
+	width: 18px;
+	height: 18px;
+	fill: currentColor;
+}
+
+/* ホバー / アクティブ時のフィードバック */
+.add-button:hover {
+	transform: translateY(-2px);
+	box-shadow: 0 10px 28px rgba(37,99,235,0.22);
+}
+.add-button:active {
+	transform: translateY(0);
+	box-shadow: 0 6px 18px rgba(37,99,235,0.16);
+}
+
+/* モバイル時は若干縮める */
+@media (max-width: 720px) {
+	.add-button {
+		right: 12px;
+		top: 6px;
+		padding: 10px 14px;
+		font-size: 14px;
+	}
+}
+
+/* モーダルオーバーレイ */
+.modal-overlay {
+	position: fixed;
+	inset: 0;
+	background: rgba(0, 0, 0, 0.45);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	z-index: 1000;
+}
+
+/* モーダル本体 */
+.modal-content {
+	background: #fff;
+	padding: 18px;
+	border-radius: 10px;
+	width: min(650px, 94%);
+	box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-content h3 {
+	margin-top: 0;
+}
+
+/* 履歴カードの小さな調整（カードクラスを使っているので追加で書く程度） */
+.modal-content .card {
+	padding: 10px;
+	margin-bottom: 8px;
+}
+
+/* 右上に表示する人数プレビュー（小さめのピル） */
+.quick-add {
+	position: absolute;
+	right: 140px; /* add-button の左あたりに配置 */
+	top: 12px;
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	background: transparent; /* 背景なし */
+	color: #222;
+	padding: 0;
+	border-radius: 4px;
+	box-shadow: none;
+	font-weight: 600;
+}
+
+/* ラベルをプレーンに */
+.quick-add .quick-label {
+	font-size: 13px;
+	color: #222;
+	margin-right: 6px;
+}
+
+/* プレーンな人数入力（下線のみ） */
+.quick-plain-input {
+	width: 56px;
+	padding: 4px 6px;
+	border: none;
+	border-bottom: 1px solid rgba(0,0,0,0.2);
+	background: transparent;
+	font-weight: 700;
+	text-align: center;
+	color: #111;
+	outline: none;
+}
+
+/* focused state for accessibility */
+.quick-plain-input:focus {
+	border-bottom-color: #2563eb;
+	box-shadow: none;
+}
+
+/* モバイル時の位置調整 */
+@media (max-width: 720px) {
+	.quick-add {
+		right: 12px;
+		top: 50px;
+	}
+}
+
+/* ヘッダー右上の add-button の下に表示する普通のテキスト（ボタンではない） */
+.header-preview-estimate {
+	position: absolute;
+	right: 18px; /* add-button に合わせる */
+	top: 56px; /* ボタンの下あたり */
+	color: #222;
+	background: transparent;
+	font-size: 16px;       /* 少し大きめ */
+	font-weight: 700;     /* 強調 */
+	padding: 4px 6px;
+	white-space: nowrap;
+}
+
+/* 入店見込みの下に置くプレーンな人数入力欄（入力欄を大きめに） */
+.header-preview-count {
+	position: absolute;
+	right: 18px;
+	top: 88px; /* estimate の下あたり、サイズ調整に合わせて下げる */
+	background: transparent;
+	padding: 2px 6px;
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* 入力欄を大きめに */
+.header-count-input {
+	width: 110px;            /* 幅を少し広めに */
+	padding: 8px 10px;       /* パディング増やす */
+	border: none;
+	border-bottom: 2px solid rgba(0,0,0,0.18);
+	background: transparent;
+	font-weight: 700;
+	text-align: center;
+	color: #111;
+	outline: none;
+	border-radius: 2px;
+	font-size: 15px;         /* フォントサイズを大きく */
+}
+
+/* 右側の「人数」ラベル（入力欄の右に表示） */
+.header-count-label {
+	color: #222;
+	font-weight: 700;
+	font-size: 14px;
+	opacity: 0.95;
+	margin-right: 4px;
+}
+
+/* focused state */
+.header-count-input:focus {
+	border-bottom-color: #2563eb;
+}
+
+/* モバイル時は位置を少し下げる・サイズ縮小 */
+@media (max-width: 720px) {
+	.header-preview-estimate {
+		right: 12px;
+		top: 96px;
+		font-size: 14px;
+	}
+	.header-preview-count {
+		right: 12px;
+		top: 120px;
+	}
+	.header-count-input {
+		width: 80px;
+		font-size: 14px;
+		padding: 6px 8px;
+	}
+	.header-count-label {
+		font-size: 13px;
+	}
+}
