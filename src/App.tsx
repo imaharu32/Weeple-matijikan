@@ -180,10 +180,6 @@ function App() {
 		setQueue((s) => s.filter((p) => p.id !== partyId));
 	};
 
-	const handleForceRemoveInside = (id: string) => {
-		setInside((s) => s.filter((x) => x.id !== id));
-	};
-
 	// estimates memoized (pass courses so queued parties' assumed exits affect later estimates)
 	const estimates = useMemo(
 		() => estimateQueueEntryMinutes(queue, inside, maxCapacity, courses),
