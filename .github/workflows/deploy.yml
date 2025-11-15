@@ -1,0 +1,56 @@
+name: Deploy to GitHub Pages
+
+on:
+  # mainブランチへのプッシュ時にこのワークフローを実行
+  push:
+    branches:
+      - main
+  
+  # 手動でのワークフロー実行を可能にする (オプション)
+  workflow_dispatch:
+
+# ワークフローの実行に必要な権限を設定
+# pagesとid-tokenはデプロイに必須
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⬇️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🔧 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20' # 使用するNode.jsのバージョンを指定
+
+      - name: 📦 Install dependencies
+        run: npm install # または yarn install, pnpm install
+
+      - name: 🏗️ Build project
+        # React CRAの場合は 'npm run build'
+        # Viteの場合は 'npm run build' (package.jsonで build: "tsc && vite build" のように設定されている前提)
+        run: npm run build 
+      
+      - name: ⬆️ Upload artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          # ビルド成果物のディレクトリを指定
+          # CRAの場合は 'build', Viteの場合は 'dist' が一般的
+          path: './' 
+
+  # buildジョブが成功した後に実行される
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: 🚀 Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
