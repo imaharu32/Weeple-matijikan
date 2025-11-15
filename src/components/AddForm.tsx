@@ -48,7 +48,7 @@ export default function AddForm({ onAdd, getEstimate, onAfterAdd }: Props) {
 				<textarea
 					value={note}
 					onChange={(e) => setNote(e.target.value)}
-					placeholder="例: 誕生日、ベビーカー、喫煙席希望など"
+					placeholder="例: 小学生、家族、カップル、大学生など"
 					className="note-input"
 					rows={2}
 				/>
