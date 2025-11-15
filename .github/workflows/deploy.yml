@@ -36,6 +36,14 @@ jobs:
         # Viteの場合は 'npm run build' (package.jsonで build: "tsc && vite build" のように設定されている前提)
         run: npm run build 
       
+      - name: 🧭 Debug: show build output
+        run: |
+          echo "=== build exists ==="
+          ls -la build || true
+          echo "=== index.html head ==="
+          head -n 40 build/index.html || true
+          echo "=== count files (recursive) ==="
+          find build -maxdepth 3 -type f | wc -l || true
       - name: ⬆️ Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
