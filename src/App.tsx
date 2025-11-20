@@ -118,7 +118,9 @@ function App() {
 	const [queue, setQueue] = useState<Party[]>(initial.queue);
 	const [inside, setInside] = useState<Inside[]>(initial.inside);
 	const [courses] = useState<Course[]>(initial.courses);
-	const [maxCapacity, setMaxCapacity] = useState<number>(initial.settings?.maxCapacity ?? 20);
+	// 店舗収容人数はプログラム内で固定（ここを変更すればアプリの定数を変えられます）
+	const FIXED_MAX_CAPACITY = 10; // ← ここを直接変更してください
+	const [maxCapacity] = useState<number>(FIXED_MAX_CAPACITY);
 	const [showAddModal, setShowAddModal] = useState(false);
 	// 履歴（退店した人の記録）
 	const [history, setHistory] = useState(() => initial.history ?? []);
@@ -270,10 +272,10 @@ function App() {
 						type="number"
 						value={maxCapacity}
 						min={1}
-						onChange={(e) => setMaxCapacity(Math.max(1, Number(e.target.value) || 1))}
-						style={{ width: 100, padding: 6, borderRadius: 6, border: '1px solid #ddd' }}
+						readOnly
+						disabled
+						style={{ width: 100, padding: 6, borderRadius: 6, border: '1px solid #ddd', background: '#f7f7f7' }}
 					/>
-					<span style={{ color: '#666', fontSize: 13 }}>（この人数を基に待ち時間を推定）</span>
 				</label>
 			</section>
 
