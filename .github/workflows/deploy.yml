@@ -30,8 +30,11 @@ jobs:
 
       - name: 📦 Install dependencies
         run: npm install # または yarn install, pnpm install
+        working-directory: ./
 
       - name: 🏗️ Build project
+        # Build inside the app-matijikan subfolder
+        working-directory: ./
         # React CRAの場合は 'npm run build'
         # Viteの場合は 'npm run build' (package.jsonで build: "tsc && vite build" のように設定されている前提)
         run: npm run build 
@@ -39,16 +42,16 @@ jobs:
       - name: 🧭 Debug show build output
         run: |
           echo "=== build exists ==="
-          ls -la build || true
+          ls -la app-matijikan/build || true
           echo "=== index.html head ==="
-          head -n 40 build/index.html || true
+          head -n 40 app-matijikan/build/index.html || true
           echo "=== count files (recursive) ==="
-          find build -maxdepth 3 -type f | wc -l || true
+          find app-matijikan/build -maxdepth 3 -type f | wc -l || true
       - name: ⬆️ Upload artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
         with:
           # Create React App の出力ディレクトリを指定（ここが公開されます）
-          path: ./build
+          path: app-matijikan/build
 
   # buildジョブが成功した後に実行される
   deploy:
