@@ -119,7 +119,7 @@ function App() {
 	const [inside, setInside] = useState<Inside[]>(initial.inside);
 	const [courses] = useState<Course[]>(initial.courses);
 	// 店舗収容人数はプログラム内で固定（ここを変更すればアプリの定数を変えられます）
-	const FIXED_MAX_CAPACITY = 10; // ← ここを直接変更してください
+	const FIXED_MAX_CAPACITY = 26; // ← ここを直接変更してください
 	const [maxCapacity] = useState<number>(FIXED_MAX_CAPACITY);
 	const [showAddModal, setShowAddModal] = useState(false);
 	// 履歴（退店した人の記録）
