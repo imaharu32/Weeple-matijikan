@@ -5,6 +5,17 @@ import { loadState, saveState } from './storage';
 import AddForm from './components/AddForm';
 import QueueList from './components/QueueList';
 import InsideList from './components/InsideList';
+import {
+	addPartyToQueue,
+	removePartyFromQueue,
+	movePartyToInside,
+	checkoutFromInside,
+	listenQueue,
+	listenInside,
+	listenHistory,
+	removeInside,
+  removeHistoryEntry,
+} from './services/firestoreCollections';
 
 function uid(prefix = '') {
 	return prefix + Math.random().toString(36).slice(2, 9);
@@ -103,6 +114,7 @@ function estimateQueueEntryMinutes(
 
 function App() {
 	const initial = loadState();
+	const shopId = process.env.REACT_APP_SHOP_ID ?? 'default_shop';
 	const [queue, setQueue] = useState<Party[]>(initial.queue);
 	const [inside, setInside] = useState<Inside[]>(initial.inside);
 	const [courses] = useState<Course[]>(initial.courses);
@@ -132,52 +144,80 @@ function App() {
 		saveState({ queue, inside, courses, history, settings: { maxCapacity } } as any);
 	}, [queue, inside, courses, maxCapacity, history]);
 
-	// 退店（履歴に記録して店内から削除）
-	const handleCheckout = (id: string) => {
-		const item = inside.find((i) => i.id === id);
-		if (!item) return;
-		const entry = {
-			id: `h_${Math.random().toString(36).slice(2, 9)}`,
-			size: item.size,
-			note: item.note,
-			courseId: item.courseId,
-			enterAt: item.enterAt,
-			exitAt: nowIso(),
+	// Firestore realtime listeners: keep local state in sync with Firestore
+	useEffect(() => {
+		const unsubQ = listenQueue(shopId, (items) => setQueue(items));
+		const unsubIn = listenInside(shopId, (items) => setInside(items));
+		const unsubH = listenHistory(shopId, (items) => setHistory(items));
+		return () => {
+			try {
+				unsubQ();
+			} catch {}
+			try {
+				unsubIn();
+			} catch {}
+			try {
+				unsubH();
+			} catch {}
 		};
-		setHistory((s) => [entry, ...s]);
-		setInside((s) => s.filter((x) => x.id !== id));
+	}, [shopId]);
+
+	// 退店（履歴に記録して店内から削除）
+	const handleCheckout = async (id: string) => {
+		try {
+			await checkoutFromInside(shopId, id, { exitAt: nowIso() });
+		} catch (e) {
+			console.error('checkout error', e);
+		}
 	};
 
 	// 削除（履歴を残さず店内から削除）
-	const handleDeleteInside = (id: string) => {
-		setInside((s) => s.filter((x) => x.id !== id));
+	const handleDeleteInside = async (id: string) => {
+		try {
+			await removeInside(shopId, id);
+		} catch (e) {
+			console.error('removeInside error', e);
+		}
 	};
 
-	const handleAdd = (size: number, note?: string) => {
-		const p: Party = { id: uid('q_'), size, note, joinAt: nowIso() };
+	const handleAdd = async (size: number, note?: string) => {
+		const id = uid('q_');
+		const p: Party = { id, size, note: note ?? '', joinAt: nowIso() };
+		// optimistic local update
 		setQueue((s) => [...s, p]);
+		try {
+			await addPartyToQueue(shopId, { size: p.size, note: p.note, joinAt: p.joinAt }, id);
+		} catch (e) {
+			console.error('addParty error', e);
+		}
 	};
 
-	const handleRemoveParty = (partyId: string) => {
-		setQueue((s) => s.filter((p) => p.id !== partyId));
+	const handleRemoveParty = async (partyId: string) => {
+		try {
+			await removePartyFromQueue(shopId, partyId);
+			setQueue((s) => s.filter((p) => p.id !== partyId));
+		} catch (e) {
+			console.error('remove party error', e);
+		}
 	};
 
-	const handleEnter = (partyId: string, courseId: string) => {
+	const handleEnter = async (partyId: string, courseId: string) => {
 		const party = queue.find((p) => p.id === partyId);
 		const course = courses.find((c) => c.id === courseId);
 		if (!party || !course) return;
 		const enterAt = nowIso();
 		const exitAt = addMinutesISO(enterAt, course.minutes + 7); // +7分
-		const ins = {
-			id: uid('in_'),
-			size: party.size,
-			note: party.note,
-			courseId,
-			enterAt,
-			exitAt,
-		};
-		setInside((s) => [...s, ins]);
-		setQueue((s) => s.filter((p) => p.id !== partyId));
+		try {
+			await movePartyToInside(shopId, partyId, { courseId, enterAt, exitAt });
+			// optimistic local update
+			setInside((s) => [
+				...s,
+				{ id: uid('in_'), size: party.size, note: party.note ?? '', courseId, enterAt, exitAt },
+			]);
+			setQueue((s) => s.filter((p) => p.id !== partyId));
+		} catch (e) {
+			console.error('move to inside error', e);
+		}
 	};
 
 	// estimates memoized (pass courses so queued parties' assumed exits affect later estimates)
@@ -278,10 +318,20 @@ function App() {
 													</div>
 												</div>
 												<div>
-													<button className="secondary" onClick={() => {
-														// 履歴から削除（確認はUIに追加しても良い）
-														setHistory((s) => s.filter(x => x.id !== h.id));
-													}}>削除</button>
+													<button
+														className="secondary"
+														onClick={async () => {
+															try {
+																await removeHistoryEntry(shopId, h.id);
+															} catch (e) {
+																console.error('remove history error', e);
+																// optimistic fallback
+																setHistory((s) => s.filter((x) => x.id !== h.id));
+															}
+														}}
+													>
+														削除
+													</button>
 												</div>
 											</div>
 										</li>

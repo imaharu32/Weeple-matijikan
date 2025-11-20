@@ -1,0 +1,52 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // shops ドキュメント: 各店舗のメタ情報（ownerUid を持つ）
+    match /shops/{shopId} {
+      // 公開読み取り（必要なら制限可能）
+      allow read: if true;
+
+      // 作成は認証済みユーザーが ownerUid を自身の uid として作成する場合のみ
+      allow create: if request.auth != null
+                     && request.resource.data.ownerUid == request.auth.uid;
+
+      // 更新 / 削除は owner のみ
+      allow update, delete: if request.auth != null
+                             && resource.data.ownerUid == request.auth.uid;
+    }
+
+    // shops のサブコレクション（queue / inside / history / meta など）
+    // 書き込みは店舗所有者またはスタッフ(claim)のみ許可、読み取りは公開
+    match /shops/{shopId}/{coll}/{docId} {
+      allow read: if true;
+
+      allow create: if request.auth != null && (
+        // owner
+        get(/databases/$(database)/documents/shops/$(shopId)).data.ownerUid == request.auth.uid
+        // または staff クレームを持つユーザー
+        || request.auth.token.isStaff == true
+      ) && isValidDocumentForCollection(coll, request.resource.data);
+
+      allow update, delete: if request.auth != null && (
+        get(/databases/$(database)/documents/shops/$(shopId)).data.ownerUid == request.auth.uid
+        || request.auth.token.isStaff == true
+      );
+    }
+
+    // それ以外はデフォルトで拒否
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+
+  // --- ヘルパー関数 ---
+  function isValidDocumentForCollection(coll, data) {
+    // queue: 必須 size:int, joinAt:string
+    return coll == 'queue' ? (data.size is int && data.joinAt is string && (data.note is string || !(data.note in data))) :
+           coll == 'inside' ? (data.size is int && data.enterAt is string && data.exitAt is string && (data.note is string || !(data.note in data))) :
+           coll == 'history' ? (data.size is int && data.exitAt is string && (data.note is string || !(data.note in data))) :
+           // meta やその他は許容（データ設計に合わせて制約を追加可）
+           true;
+  }
+}
