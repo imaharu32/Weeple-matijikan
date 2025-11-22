@@ -112,6 +112,35 @@ function estimateQueueEntryMinutes(
 	return estimates;
 }
 
+// --- 履歴（日付）処理ユーティリティ ---
+function toYMD(iso: string) {
+	const d = new Date(iso);
+	// ローカル日付ベースで YYYY-MM-DD を返す
+	const y = d.getFullYear();
+	const m = String(d.getMonth() + 1).padStart(2, '0');
+	const dd = String(d.getDate()).padStart(2, '0');
+	return `${y}-${m}-${dd}`;
+}
+
+function humanLabelForDate(ymd: string) {
+	const today = new Date();
+	const tY = today.getFullYear();
+	const tM = String(today.getMonth() + 1).padStart(2, '0');
+	const tD = String(today.getDate()).padStart(2, '0');
+	const todayYMD = `${tY}-${tM}-${tD}`;
+
+	const yesterday = new Date();
+	yesterday.setDate(today.getDate() - 1);
+	const yY = yesterday.getFullYear();
+	const yM = String(yesterday.getMonth() + 1).padStart(2, '0');
+	const yD = String(yesterday.getDate()).padStart(2, '0');
+	const yesterdayYMD = `${yY}-${yM}-${yD}`;
+
+	if (ymd === todayYMD) return '今日';
+	if (ymd === yesterdayYMD) return '昨日';
+	return ymd;
+}
+
 function App() {
 	const initial = loadState();
 	const shopId = process.env.REACT_APP_SHOP_ID ?? 'default_shop';
@@ -125,6 +154,7 @@ function App() {
 	// 履歴（退店した人の記録）
 	const [history, setHistory] = useState(() => initial.history ?? []);
 	const [showHistoryModal, setShowHistoryModal] = useState(false);
+	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
 	// 右上プレビュー用：人数入力（空文字は未入力）
 	const [previewSize, setPreviewSize] = useState<number | ''>('');
@@ -146,6 +176,13 @@ function App() {
 		saveState({ queue, inside, courses, history, settings: { maxCapacity } } as any);
 	}, [queue, inside, courses, maxCapacity, history]);
 
+	// clear error message after a short time
+	useEffect(() => {
+		if (!errorMessage) return;
+		const t = setTimeout(() => setErrorMessage(null), 5000);
+		return () => clearTimeout(t);
+	}, [errorMessage]);
+
 	// Firestore realtime listeners: keep local state in sync with Firestore
 	useEffect(() => {
 		const unsubQ = listenQueue(shopId, (items) => setQueue(items));
@@ -166,19 +203,46 @@ function App() {
 
 	// 退店（履歴に記録して店内から削除）
 	const handleCheckout = async (id: string) => {
+		const prevInside = inside;
+		const prevHistory = history;
+		const entry = inside.find((i) => i.id === id);
+		if (!entry) return;
+		const hist: any = {
+			id: uid('h_'),
+			size: entry.size,
+			note: entry.note,
+			courseId: entry.courseId,
+			enterAt: entry.enterAt,
+			exitAt: nowIso(),
+		};
+		// optimistic update
+		setHistory((s) => [...s, hist]);
+		setInside((s) => s.filter((x) => x.id !== id));
+
 		try {
-			await checkoutFromInside(shopId, id, { exitAt: nowIso() });
+			await checkoutFromInside(shopId, id, { exitAt: hist.exitAt });
 		} catch (e) {
 			console.error('checkout error', e);
+			// rollback
+			setHistory(prevHistory);
+			setInside(prevInside);
+			setErrorMessage('退店処理に失敗しました。通信状況を確認してください。');
 		}
 	};
 
 	// 削除（履歴を残さず店内から削除）
 	const handleDeleteInside = async (id: string) => {
+		const prevInside = inside;
+		// optimistic remove
+		setInside((s) => s.filter((x) => x.id !== id));
+
 		try {
 			await removeInside(shopId, id);
 		} catch (e) {
 			console.error('removeInside error', e);
+			// rollback
+			setInside(prevInside);
+			setErrorMessage('店内レコードの削除に失敗しました。');
 		}
 	};
 
@@ -228,15 +292,38 @@ function App() {
 		[queue, inside, maxCapacity, courses]
 	);
 
+	// --- 履歴を日付別にグルーピングして表示用の集計を作る ---
+	const { groupedHistoryKeys, groupedHistoryMap } = useMemo(() => {
+		const map = new Map<string, typeof history>();
+		history.forEach((h) => {
+			const k = toYMD(h.exitAt);
+			if (!map.has(k)) map.set(k, [] as typeof history);
+			map.get(k)!.push(h);
+		});
+		// ソート（降順：新しい日付が先）
+		const keys = Array.from(map.keys()).sort((a, b) => (a < b ? 1 : -1));
+
+		return { groupedHistoryKeys: keys, groupedHistoryMap: map };
+	}, [history]);
+
 	return (
 		<div className="App" style={{ padding: 16 }}>
+			{/* エラーメッセージ表示（短期表示） */}
+			{errorMessage && (
+				<div style={{ position: 'fixed', top: 12, left: '50%', transform: 'translateX(-50%)', background: '#fee', color: '#900', padding: '8px 12px', borderRadius: 6, boxShadow: '0 2px 6px rgba(0,0,0,0.12)' }}>
+					{errorMessage}
+					<button style={{ marginLeft: 12 }} onClick={() => setErrorMessage(null)}>閉じる</button>
+				</div>
+			)}
 			<header className="app-header">
 				<h1>待ち時間管理　ボドゲカフェWeeple</h1>
 
 				{/* 右上操作：履歴モーダル表示ボタン */}
-				<button className="add-button" style={{ right: 140 }} onClick={() => setShowHistoryModal(true)}>
+				<button className="secondary history-button" onClick={() => setShowHistoryModal(true)}>
 					履歴
 				</button>
+
+				{/* ヘッダの統計は履歴モーダル内で表示するため削除 */}
 
 				<button className="add-button" onClick={() => setShowAddModal(true)}>
 					新しく並ぶ
@@ -306,40 +393,59 @@ function App() {
 						{history.length === 0 ? (
 							<p>履歴はありません</p>
 						) : (
-							<ul style={{ listStyle: 'none', padding: 0 }}>
-								{history.map((h) => {
-									const course = courses.find((c) => c.id === h.courseId);
+							<div style={{ maxHeight: '60vh', overflow: 'auto' }}>
+								{groupedHistoryKeys.map((day) => {
+									const items = groupedHistoryMap.get(day) || [];
+									const dayTotal = items.reduce((s, e) => s + (e.size ?? 0), 0);
+									// 日ごとのコース別人数を集計
+									const courseCounts = courses.map((c) => ({ id: c.id, name: c.name, count: items.reduce((s, e) => s + ((e.courseId === c.id) ? (e.size ?? 0) : 0), 0) }));
 									return (
-										<li key={h.id} className="card">
-											<div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
-												<div>
-													<div style={{ fontWeight: 700 }}>{h.size}名 {h.note ? `- ${h.note}` : ''}</div>
-													<div style={{ color: '#666', fontSize: 13 }}>
-														{course ? course.name : (h.courseId ?? 'コース未設定')}
-														{' '}／ 退店: {new Date(h.exitAt).toLocaleString()}
-													</div>
-												</div>
-												<div>
-													<button
-														className="secondary"
-														onClick={async () => {
-															try {
-																await removeHistoryEntry(shopId, h.id);
-															} catch (e) {
-																console.error('remove history error', e);
-																// optimistic fallback
-																setHistory((s) => s.filter((x) => x.id !== h.id));
-															}
-														}}
-													>
-														削除
-													</button>
-												</div>
+										<div key={day} style={{ marginBottom: 12 }}>
+											<div style={{ fontWeight: 700, marginBottom: 6 }}>
+												{humanLabelForDate(day)} — 合計: {dayTotal}名
 											</div>
-										</li>
+											<div style={{ marginBottom: 8, color: '#444', fontSize: 13 }}>
+												{courseCounts.map(cc => (
+													<span key={cc.id} style={{ marginRight: 12 }}>{cc.name}: {cc.count}名</span>
+												))}
+											</div>
+											<ul style={{ listStyle: 'none', padding: 0 }}>
+												{items.map((h) => {
+													const course = courses.find((c) => c.id === h.courseId);
+													return (
+														<li key={h.id} className="card" style={{ marginBottom: 6 }}>
+															<div style={{ display: 'flex', justifyContent: 'space-between', gap: 12 }}>
+																<div>
+																	<div style={{ fontWeight: 700 }}>{h.size}名 {h.note ? `- ${h.note}` : ''}</div>
+																	<div style={{ color: '#666', fontSize: 13 }}>
+																		{course ? course.name : (h.courseId ?? 'コース未設定')} ／ 退店: {new Date(h.exitAt).toLocaleString()}
+																	</div>
+																</div>
+																<div>
+																	<button
+																		className="secondary"
+																		onClick={async () => {
+																			try {
+																				await removeHistoryEntry(shopId, h.id);
+																			} catch (e) {
+																				console.error('remove history error', e);
+																				// optimistic fallback
+																				setHistory((s) => s.filter((x) => x.id !== h.id));
+																			}
+																		}}
+																	>
+																	削除
+																	</button>
+																</div>
+															</div>
+														</li>
+													);
+												})}
+											</ul>
+										</div>
 									);
 								})}
-							</ul>
+							</div>
 						)}
 						<div style={{ textAlign: 'right', marginTop: 12 }}>
 							<button className="secondary" onClick={() => setShowHistoryModal(false)}>閉じる</button>

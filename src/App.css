@@ -261,6 +261,25 @@ button.secondary {
 	gap: 8px;
 }
 
+/* History button (secondary) positioned to the left of main add-button on desktop */
+.history-button {
+	position: absolute;
+	right: 140px; /* matches previous inline placement */
+	top: 8px;
+	padding: 8px 12px;
+	border-radius: 8px;
+}
+
+@media (max-width: 640px) {
+	.history-button {
+		position: relative;
+		right: auto;
+		top: auto;
+		width: 100%;
+		margin-bottom: 6px;
+	}
+}
+
 /* アイコンやテキストがあれば中央揃えで見栄え良く */
 .add-button svg {
 	width: 18px;
@@ -442,3 +461,94 @@ button.secondary {
 		font-size: 13px;
 	}
 }
+
+/* --- Mobile-specific enhancements (追加) --- */
+@media (max-width: 640px) {
+	/* Make header compact and stack controls */
+	.app-header {
+		padding: 12px 10px;
+		align-items: flex-start;
+	}
+
+	.app-header h1 {
+		font-size: 18px;
+		line-height: 1.2;
+		margin: 0 0 8px 0;
+	}
+
+	/* Move action buttons into flow instead of absolute positioning */
+	.add-button {
+		position: relative;
+		right: auto;
+		top: auto;
+		margin: 6px 0;
+		padding: 10px 12px;
+		font-size: 14px;
+		border-radius: 8px;
+		width: 100%;
+	}
+
+	/* Reduce prominence of quick preview and stack it */
+	.quick-add {
+		position: relative;
+		right: auto;
+		top: auto;
+		margin-top: 8px;
+	}
+
+	.header-preview-estimate,
+	.header-preview-count {
+		position: relative;
+		right: auto;
+		top: auto;
+		margin-top: 8px;
+		width: 100%;
+	}
+
+	/* Stack columns vertically */
+	.main-columns {
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		height: auto;
+	}
+
+	.column {
+		padding: 0 6px;
+	}
+
+	/* Make modal full width with side margins */
+	.modal-content {
+		width: calc(100% - 24px) !important;
+		max-width: none;
+		margin: 12px;
+		padding: 12px;
+		border-radius: 10px;
+	}
+
+	/* Increase touch target sizes */
+	button.primary, button.secondary, .card button {
+		padding: 10px 14px;
+		font-size: 15px;
+	}
+
+	.card {
+		padding: 12px;
+	}
+
+	.card-left {
+		flex: 0 0 48px;
+	}
+
+	/* Ensure lists wrap nicely */
+	.card div {
+		word-break: break-word;
+	}
+}
+
+/* small helper for stacked tabs UI if needed later */
+.stack-tabs {
+	display: flex;
+	gap: 8px;
+}
+
