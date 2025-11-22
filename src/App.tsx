@@ -273,16 +273,24 @@ function App() {
 		if (!party || !course) return;
 		const enterAt = nowIso();
 		const exitAt = addMinutesISO(enterAt, course.minutes + 7); // +7分
+
+		const prevQueue = queue;
+		const prevInside = inside;
+
+		// optimistic local update: remove from queue, add to inside with temp id
+		const tempInside = { id: uid('in_'), size: party.size, note: party.note ?? '', courseId, enterAt, exitAt };
+		setInside((s) => [...s, tempInside]);
+		setQueue((s) => s.filter((p) => p.id !== partyId));
+
 		try {
 			await movePartyToInside(shopId, partyId, { courseId, enterAt, exitAt });
-			// optimistic local update
-			setInside((s) => [
-				...s,
-				{ id: uid('in_'), size: party.size, note: party.note ?? '', courseId, enterAt, exitAt },
-			]);
-			setQueue((s) => s.filter((p) => p.id !== partyId));
+			// success: server snapshot listener will update local state accordingly
 		} catch (e) {
 			console.error('move to inside error', e);
+			// rollback
+			setInside(prevInside);
+			setQueue(prevQueue);
+			setErrorMessage('入店処理に失敗しました。再試行してください。');
 		}
 	};
 
