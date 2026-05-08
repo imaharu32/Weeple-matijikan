@@ -6,9 +6,11 @@ type Props = {
 	getEstimate?: (size: number) => number;
 	// 追加：送信後にモーダルを閉じるコールバック（任意）
 	onAfterAdd?: () => void;
+	// キャンセルボタンコールバック（任意）
+	onCancel?: () => void;
 };
 
-export default function AddForm({ onAdd, getEstimate, onAfterAdd }: Props) {
+export default function AddForm({ onAdd, getEstimate, onAfterAdd, onCancel }: Props) {
 	const [size, setSize] = useState<number>(2);
 	const [note, setNote] = useState<string>('');
 
@@ -32,16 +34,33 @@ export default function AddForm({ onAdd, getEstimate, onAfterAdd }: Props) {
 			}}
 			className="add-form"
 		>
-			<label className="add-form-row">
-				<span className="add-form-label">人数：</span>
-				<input
-					type="number"
-					value={size}
-					min={1}
-					onChange={(e) => setSize(Number(e.target.value))}
-					className="size-input"
-				/>
-			</label>
+			<div className="add-form-size-section">
+				<label className="add-form-label">人数</label>
+				<div className="add-form-size-control">
+					<button
+						type="button"
+						className="size-btn-minus"
+						onClick={() => setSize(Math.max(1, size - 1))}
+						disabled={size <= 1}
+					>
+						−
+					</button>
+					<input
+						type="number"
+						value={size}
+						min={1}
+						onChange={(e) => setSize(Number(e.target.value))}
+						className="size-input-large"
+					/>
+					<button
+						type="button"
+						className="size-btn-plus"
+						onClick={() => setSize(size + 1)}
+					>
+						＋
+					</button>
+				</div>
+			</div>
 
 			<label className="add-form-row">
 				<span className="add-form-label">メモ：</span>
@@ -55,13 +74,18 @@ export default function AddForm({ onAdd, getEstimate, onAfterAdd }: Props) {
 			</label>
 
 			{estimateMin !== null && (
-				<div style={{ color: '#444', fontSize: 14, marginTop: 6 }}>
-					並んだ場合の入店見込み： 約{estimateMin}分
+				<div className="add-form-estimate">
+					並んだ場合の入店見込み： <strong>約{estimateMin}分</strong>
 				</div>
 			)}
 
 			<div className="add-form-actions">
-				<button type="submit" className="primary">列に追加</button>
+				<button type="button" className="secondary" onClick={onCancel}>
+					キャンセル
+				</button>
+				<button type="submit" className="primary" style={{ fontSize: 16, padding: '12px 20px' }}>
+					列に追加
+				</button>
 			</div>
 		</form>
 	);

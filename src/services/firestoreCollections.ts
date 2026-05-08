@@ -94,7 +94,7 @@ export async function movePartyToInside(
   });
 }
 
-// トランザクション: queue -> inside 作成 + 複数座席の occupiedByInsideId 更新
+// トランザクション: queue -> inside 作成 + 座席情報を Inside に含める
 export async function movePartyToInsideWithSeats(
   shopId: string,
   partyId: string,
@@ -114,16 +114,10 @@ export async function movePartyToInsideWithSeats(
       note: (partyData as any).note ?? '',
       ...insideFields,
       enterAt: insideFields.enterAt ?? new Date().toISOString(),
+      seats: seats, // 座席詳細を直接含める
       createdAt: serverTimestamp(),
     };
     tx.set(newInsideRef, insideData);
-
-    // update seats
-    for (const s of seats) {
-      const seatRef = doc(unitSeatsCol(shopId), s.id);
-      tx.set(seatRef, { tableNumber: s.tableNumber, seatIndex: s.seatIndex, occupiedByInsideId: insideId ?? newInsideRef.id }, { merge: true } as any);
-    }
-
     tx.delete(queueRef);
   });
 }
@@ -171,54 +165,85 @@ export async function checkoutFromInsideWithSeats(
       ...historyExtra,
     };
     tx.set(historyRef, historyData);
-
-    // release seats
-    for (const s of seats) {
-      const seatRef = doc(unitSeatsCol(shopId), s.id);
-      tx.set(seatRef, { occupiedByInsideId: null }, { merge: true } as any);
-    }
-
     tx.delete(insideRef);
   });
 }
 
-// トランザクション: inside の単純削除 + seats の解放（history を作らない）
+// トランザクション: inside の単純削除（history を作らない）
 export async function removeInsideWithSeats(shopId: string, insideId: string, seats: { id: string }[] = []) {
   const insideRef = doc(insideCol(shopId), insideId);
-  await runTransaction(db, async (tx) => {
-    const snap = await tx.get(insideRef);
-    if (!snap.exists()) throw new Error('Inside entry not found');
-    for (const s of seats) {
-      const seatRef = doc(unitSeatsCol(shopId), s.id);
-      tx.set(seatRef, { occupiedByInsideId: null }, { merge: true } as any);
-    }
-    tx.delete(insideRef);
-  });
+  await deleteDoc(insideRef);
 }
 
 // 6) 単方向リスナー（リアルタイム同期）
 export function listenQueue(shopId: string, cb: (items: (Party & { id: string })[]) => void) {
   const q = query(queueCol(shopId), orderBy("createdAt"));
-  return onSnapshot(q, (snapshot) => {
-    const items = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-    cb(items);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const items = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+      cb(items);
+    },
+    (error) => {
+      console.error('[Firestore] listenQueue error:', error.code, error.message);
+    }
+  );
 }
 
 export function listenInside(shopId: string, cb: (items: (Inside & { id: string })[]) => void) {
   const q = query(insideCol(shopId), orderBy("createdAt"));
-  return onSnapshot(q, (snapshot) => {
-    const items = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-    cb(items);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const items = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+      cb(items);
+    },
+    (error) => {
+      console.error('[Firestore] listenInside error:', error.code, error.message);
+    }
+  );
 }
 
 export function listenUnitSeats(shopId: string, cb: (items: (any & { id: string })[]) => void) {
   const q = query(unitSeatsCol(shopId), orderBy("tableNumber"), orderBy("seatIndex"));
-  return onSnapshot(q, (snapshot) => {
-    const items = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-    cb(items);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const items = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+      cb(items);
+    },
+    (error) => {
+      console.error('[Firestore] listenUnitSeats error:', error.code, error.message);
+    }
+  );
+}
+
+// unitSeats が未作成の店舗向けに、初回のみ 6x6 の座席を作成
+export async function ensureUnitSeatsInitialized(shopId: string) {
+  const colRef = unitSeatsCol(shopId);
+  try {
+    const snaps = await getDocs(colRef);
+    console.log('[Firestore] ensureUnitSeatsInitialized - existing seats:', snaps.size);
+    if (!snaps.empty) {
+      console.log('[Firestore] unitSeats already initialized, skipping');
+      return;
+    }
+
+    console.log('[Firestore] Creating 36 unitSeats...');
+    const batch = writeBatch(db);
+    for (let tableNumber = 1; tableNumber <= 6; tableNumber++) {
+      for (let seatIndex = 0; seatIndex < 6; seatIndex++) {
+        const id = `table_${tableNumber}_${seatIndex}`;
+        const ref = doc(colRef, id);
+        batch.set(ref, { tableNumber, seatIndex, occupiedByInsideId: null } as any, { merge: true } as any);
+      }
+    }
+    await batch.commit();
+    console.log('[Firestore] unitSeats creation completed successfully');
+  } catch (error) {
+    console.error('[Firestore] ensureUnitSeatsInitialized failed:', error);
+    throw error;
+  }
 }
 
 export async function updateUnitSeatsBatch(shopId: string, seats: any[]) {
@@ -234,10 +259,16 @@ export async function updateUnitSeatsBatch(shopId: string, seats: any[]) {
 
 export function listenHistory(shopId: string, cb: (items: (HistoryEntry & { id: string })[]) => void) {
   const q = query(historyCol(shopId), orderBy("createdAt", "desc"));
-  return onSnapshot(q, (snapshot) => {
-    const items = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
-    cb(items);
-  });
+  return onSnapshot(
+    q,
+    (snapshot) => {
+      const items = snapshot.docs.map((d) => ({ id: d.id, ...(d.data() as any) }));
+      cb(items);
+    },
+    (error) => {
+      console.error('[Firestore] listenHistory error:', error.code, error.message);
+    }
+  );
 }
 
 // 7) 手動同期: 全置換（既存を削除して上書き） — 必要なら使用

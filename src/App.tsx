@@ -1,7 +1,8 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import './App.css';
-import { Party, Inside, Course, UnitSeat } from './types';
-import { loadState, saveState } from './storage';
+import { Party, Inside, Course, UnitSeat, HistoryEntry, SeatDetail } from './types';
+import { getDefaultState } from './storage';
+import { ensureAuthenticated } from './firebase';
 import AddForm from './components/AddForm';
 import QueueList from './components/QueueList';
 import InsideList from './components/InsideList';
@@ -14,7 +15,6 @@ import {
 	checkoutFromInsideWithSeats,
 	listenQueue,
 	listenInside,
-	listenUnitSeats,
 	listenHistory,
 	removeInsideWithSeats,
 	removeHistoryEntry,
@@ -29,23 +29,35 @@ import {
 	groupHistoryByDate,
 	estimateWaitingTimeWithSeats,
 	estimateForNewParty,
-	releaseSeatsOfParty,
-	// assignSeatsToParty, (no longer used here)
-	assignMultipleSeats,
 } from './utils';
 import { useErrorMessage, useModals, useMultiSelect } from './hooks';
 
 function App() {
-	const initial = loadState();
+	const defaultState = getDefaultState();
 	const shopId = process.env.REACT_APP_SHOP_ID ?? 'default_shop';
-	const [queue, setQueue] = useState<Party[]>(initial.queue);
-	const [inside, setInside] = useState<Inside[]>(initial.inside);
-	const [courses] = useState<Course[]>(initial.courses);
-	const [history, setHistory] = useState(() => initial.history ?? []);
-	const [unitSeats, setUnitSeats] = useState<UnitSeat[]>(initial.unitSeats ?? []);
+	const [queue, setQueue] = useState<Party[]>([]);
+	const [inside, setInside] = useState<Inside[]>([]);
+	const [courses] = useState<Course[]>(defaultState.courses);
+	const [history, setHistory] = useState<HistoryEntry[]>([]);
 	const [previewSize, setPreviewSize] = useState<number | ''>('');
 	const FIXED_MAX_CAPACITY = 36; // 6人席 × 6 = 36人
 	const [maxCapacity] = useState<number>(FIXED_MAX_CAPACITY);
+
+	// Generate all 6x6 unit seats for UI (static)
+	const allUnitSeats = useMemo<UnitSeat[]>(() => {
+		const seats: UnitSeat[] = [];
+		for (let tableNum = 1; tableNum <= 6; tableNum++) {
+			for (let seatIdx = 0; seatIdx < 6; seatIdx++) {
+				seats.push({
+					id: `table_${tableNum}_${seatIdx}`,
+					tableNumber: tableNum,
+					seatIndex: seatIdx,
+					occupiedByInsideId: undefined,
+				});
+			}
+		}
+		return seats;
+	}, []);
 	const { showAddModal, setShowAddModal, showHistoryModal, setShowHistoryModal } = useModals();
 	const { message: errorMessage, setMessage: setErrorMessage } = useErrorMessage(5000);
 	const selectedParties = useMultiSelect();
@@ -54,29 +66,47 @@ function App() {
 	const [selectedPartyForSeats, setSelectedPartyForSeats] = useState<Party | null>(null);
 
 	useEffect(() => {
-		saveState({ queue, inside, courses, history, settings: { maxCapacity }, unitSeats } as any);
-	}, [queue, inside, courses, history, maxCapacity, unitSeats]);
+		let isMounted = true;
 
-	useEffect(() => {
-		const unsubQueue = listenQueue(shopId, (items) => setQueue(items));
-		const unsubInside = listenInside(shopId, (items) => setInside(items));
-		const unsubHistory = listenHistory(shopId, (items) => setHistory(items));
-		const unsubUnitSeats = listenUnitSeats(shopId, (items) => setUnitSeats(items));
+		// Ensure authentication before setting up listeners
+		ensureAuthenticated()
+			.then(() => {
+				if (!isMounted) return;
+				console.log('[App] Starting Firestore listeners...');
+
+				const unsubQueue = listenQueue(shopId, (items) => {
+					if (isMounted) setQueue(items);
+				});
+				const unsubInside = listenInside(shopId, (items) => {
+					if (isMounted) setInside(items);
+				});
+				const unsubHistory = listenHistory(shopId, (items) => {
+					if (isMounted) setHistory(items);
+				});
+
+				return () => {
+					try {
+						unsubQueue();
+					} catch {}
+					try {
+						unsubInside();
+					} catch {}
+					try {
+						unsubHistory();
+					} catch {}
+				};
+			})
+			.catch((error) => {
+				console.error('[App] Authentication failed:', error);
+				if (isMounted) {
+					setErrorMessage('認証に失敗しました。ページをリロードしてください。');
+				}
+			});
+
 		return () => {
-			try {
-				unsubQueue();
-			} catch {}
-			try {
-				unsubInside();
-			} catch {}
-			try {
-				unsubHistory();
-			} catch {}
-			try {
-				unsubUnitSeats();
-			} catch {}
+			isMounted = false;
 		};
-	}, [shopId]);
+	}, [shopId, setErrorMessage]);
 
 	const handleAdd = async (size: number, note?: string) => {
 		const id = uid('q_');
@@ -123,7 +153,7 @@ function App() {
 		setShowSeatSelectionModal(true);
 	};
 
-	const handleSeatSelectionConfirm = async (courseId: string, selectedSeatIds: string[]) => {
+	const handleSeatSelectionConfirm = async (courseId: string, selectedSeats: SeatDetail[]) => {
 		if (!selectedPartyForSeats) return;
 
 		const party = selectedPartyForSeats;
@@ -134,13 +164,7 @@ function App() {
 		const exitAt = addMinutesISO(enterAt, course.minutes + 7);
 		const previousQueue = queue;
 		const previousInside = inside;
-		const previousUnitSeats = unitSeats.map((s) => ({ ...s }));
 		const tempInsideId = uid('in_');
-
-		// 座席割当実行
-		const updatedSeats = unitSeats.map((s) => ({ ...s }));
-		// assign selected seat ids
-		assignMultipleSeats(selectedSeatIds, tempInsideId, updatedSeats);
 
 		const tempInside: Inside = {
 			id: tempInsideId,
@@ -149,87 +173,60 @@ function App() {
 			courseId,
 			enterAt,
 			exitAt,
-			seatIds: selectedSeatIds,
+			seats: selectedSeats,
 		};
 
 		setQueue((current) => current.filter((item) => item.id !== party.id));
 		setInside((current) => [...current, tempInside]);
-		setUnitSeats(updatedSeats);
 		setShowSeatSelectionModal(false);
 		setSelectedPartyForSeats(null);
 
 		try {
-			// atomic: queue -> inside 作成 + seats 更新
-			// atomic create inside + set occupiedByInsideId on selected seats
-			const seatsForTx = selectedSeatIds.map((id) => {
-				const s = updatedSeats.find((u) => u.id === id)!;
-				return { id: s.id, tableNumber: s.tableNumber, seatIndex: s.seatIndex };
-			});
-			await movePartyToInsideWithSeats(shopId, party.id, { courseId, enterAt, exitAt }, tempInsideId, seatsForTx);
+			await movePartyToInsideWithSeats(shopId, party.id, { courseId, enterAt, exitAt }, tempInsideId, selectedSeats);
 		} catch (error) {
-			console.error('move to inside / update seats error', error);
+			console.error('move to inside error', error);
 			// ロールバック（ローカル）
 			setQueue(previousQueue);
 			setInside(previousInside);
-			setUnitSeats(previousUnitSeats);
 			setErrorMessage('入店処理に失敗しました。再試行してください。');
-			// 効果的なサーバ側ロールバックが必要なら追加実装
 		}
 	};
 
 	const handleCheckout = async (id: string) => {
 		const entry = inside.find((item) => item.id === id);
 		if (!entry) return;
-		const historyEntry = {
+		const historyEntry: HistoryEntry = {
 			id: uid('h_'),
 			size: entry.size,
 			note: entry.note,
 			courseId: entry.courseId,
 			enterAt: entry.enterAt,
 			exitAt: nowIso(),
-			seatId: entry.seatId,
-			seatIds: entry.seatIds,
+			seats: entry.seats,
 		};
 		const previousInside = inside;
 		const previousHistory = history;
-		const previousUnitSeats = unitSeats.map((s) => ({ ...s }));
-
-		// 座席解放
-		const updatedSeats = unitSeats.map((s) => ({ ...s }));
-		releaseSeatsOfParty(entry.id, updatedSeats);
 
 		setInside((current) => current.filter((item) => item.id !== id));
 		setHistory((current) => [...current, historyEntry]);
-		setUnitSeats(updatedSeats);
 
 		try {
-			await checkoutFromInsideWithSeats(shopId, id, { exitAt: historyEntry.exitAt }, updatedSeats.map((s) => ({ id: s.id })));
+			await checkoutFromInsideWithSeats(shopId, id, { exitAt: historyEntry.exitAt }, []);
 		} catch (error) {
 			console.error('checkout error', error);
 			setInside(previousInside);
 			setHistory(previousHistory);
-			setUnitSeats(previousUnitSeats);
 			setErrorMessage('退店処理に失敗しました。通信状況を確認してください。');
 		}
 	};
 
 	const handleDeleteInside = async (id: string) => {
 		const previousInside = inside;
-		const previousUnitSeats = unitSeats.map((s) => ({ ...s }));
-
-		// 座席解放
-		const updatedSeats = unitSeats.map((s) => ({ ...s }));
-		releaseSeatsOfParty(id, updatedSeats);
-
 		setInside((current) => current.filter((item) => item.id !== id));
-		setUnitSeats(updatedSeats);
-
 		try {
-			await removeInsideWithSeats(shopId, id, updatedSeats.map((s) => ({ id: s.id })));
+			await removeInsideWithSeats(shopId, id, []);
 		} catch (error) {
 			console.error('remove inside error', error);
-			setInside(previousInside);
-			setUnitSeats(previousUnitSeats);
 			setInside(previousInside);
 			setErrorMessage('店内レコードの削除に失敗しました。');
 		}
@@ -248,13 +245,13 @@ function App() {
 	};
 
 	const estimates = useMemo(
-		() => estimateWaitingTimeWithSeats(queue, inside, unitSeats, courses),
-		[queue, inside, unitSeats, courses]
+		() => estimateWaitingTimeWithSeats(queue, inside, [], courses),
+		[queue, inside, courses]
 	);
 	const { keys: groupedHistoryKeys, map: groupedHistoryMap } = useMemo(() => groupHistoryByDate(history), [history]);
 
 	const estimateForNewPartyPreview = (size: number) => {
-		return estimateForNewParty(size, queue, inside, unitSeats, courses);
+		return estimateForNewParty(size, queue, inside, allUnitSeats, courses);
 	};
 
 	return (
@@ -338,7 +335,7 @@ function App() {
 
 			<section style={{ marginTop: 20, marginBottom: 12 }}>
 				<SeatView
-					unitSeats={unitSeats}
+					unitSeats={allUnitSeats}
 					inside={inside}
 					courses={courses}
 					onCheckout={handleCheckout}
@@ -427,18 +424,14 @@ function App() {
 
 			{showAddModal && (
 				<div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-					<div className="modal-content" onClick={(e) => e.stopPropagation()}>
+					<div className="modal-content add-form-modal" onClick={(e) => e.stopPropagation()}>
 						<h3>新しく並ぶ</h3>
 						<AddForm
 							onAdd={handleAdd}
 							getEstimate={(size) => estimateForNewPartyPreview(size)}
 							onAfterAdd={() => setShowAddModal(false)}
+							onCancel={() => setShowAddModal(false)}
 						/>
-						<div style={{ textAlign: 'right', marginTop: 8 }}>
-							<button className="secondary" onClick={() => setShowAddModal(false)}>
-								閉じる
-							</button>
-						</div>
 					</div>
 				</div>
 			)}
@@ -447,7 +440,8 @@ function App() {
 				<SeatSelectionModal
 					party={selectedPartyForSeats}
 					courses={courses}
-					unitSeats={unitSeats}
+					unitSeats={allUnitSeats}
+					inside={inside}
 					onConfirm={handleSeatSelectionConfirm}
 					onCancel={() => {
 						setShowSeatSelectionModal(false);

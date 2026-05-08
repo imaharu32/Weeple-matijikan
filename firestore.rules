@@ -4,8 +4,8 @@ service cloud.firestore {
 
     // shops ドキュメント: 各店舗のメタ情報（ownerUid を持つ）
     match /shops/{shopId} {
-      // 公開読み取り（必要なら制限可能）
-      allow read: if true;
+      // 認証済みユーザーのみ読み取り許可
+      allow read: if request.auth != null;
 
       // 作成は認証済みユーザーが ownerUid を自身の uid として作成する場合のみ
       allow create: if request.auth != null
@@ -16,10 +16,11 @@ service cloud.firestore {
                              && resource.data.ownerUid == request.auth.uid;
     }
 
-    // shops のサブコレクション（queue / inside / history / meta など）
-    // 書き込みは店舗所有者またはスタッフ(claim)のみ許可、読み取りは公開
+    // shops のサブコレクション（queue / inside / history / unitSeats など）
+    // 読み取り: 認証済みユーザーのみ許可
+    // 書き込み: 店舗所有者またはスタッフのみ許可
     match /shops/{shopId}/{coll}/{docId} {
-      allow read: if true;
+      allow read: if request.auth != null;
 
       allow create: if request.auth != null && (
         // owner

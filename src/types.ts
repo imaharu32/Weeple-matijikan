@@ -5,6 +5,12 @@ export type Party = {
 	joinAt: string; // ISO
 };
 
+export type SeatDetail = {
+	id: string; // "table_1_0"
+	tableNumber: number; // 1-6
+	seatIndex: number; // 0-5
+};
+
 export type Inside = {
 	id: string;
 	size: number;
@@ -12,8 +18,7 @@ export type Inside = {
 	courseId: string;
 	enterAt: string; // ISO
 	exitAt: string; // ISO
-	seatId?: string; // 単一座席ID（互換性用）
-	seatIds?: string[]; // 複数座席を占有する場合の座席IDリスト
+	seats: SeatDetail[]; // 座席詳細情報
 };
 
 export type Seat = {
@@ -47,8 +52,7 @@ export type HistoryEntry = {
 	courseId?: string;
 	enterAt?: string; // ISO - optional if not available
 	exitAt: string; // ISO - when removed/checked out
-	seatId?: string;
-	seatIds?: string[];
+	seats: SeatDetail[]; // 座席詳細情報
 };
 
 export type Settings = {

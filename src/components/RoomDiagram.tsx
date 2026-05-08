@@ -71,8 +71,6 @@ export default function RoomDiagram({
 
 					return (
 						<div key={`table-${tableNum}`} className={`room-table room-table--row-${pos.row} room-table--col-${pos.col}`}>
-							<div className="room-table-label">テーブル {tableNum}</div>
-							<div className="room-table-core">卓</div>
 							{tableSeats.map((seatInfo, seatIndex) => {
 								const isOccupied = !!seatInfo.occupiedByInsideId;
 								const seatId = seatInfo.id;

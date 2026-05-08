@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { Party, Course, UnitSeat } from '../types';
+import { Party, Course, UnitSeat, SeatDetail, Inside } from '../types';
 import RoomDiagram from './RoomDiagram';
 
 type Props = {
     party: Party;
     courses: Course[];
     unitSeats: UnitSeat[];
-    onConfirm: (courseId: string, selectedSeatIds: string[]) => void;
+    inside: Inside[];
+    onConfirm: (courseId: string, selectedSeats: SeatDetail[]) => void;
     onCancel: () => void;
 };
 
-export default function SeatSelectionModal({ party, courses, unitSeats, onConfirm, onCancel }: Props) {
+export default function SeatSelectionModal({ party, courses, unitSeats, inside, onConfirm, onCancel }: Props) {
     const [selectedCourseId, setSelectedCourseId] = useState<string>(courses[0]?.id ?? '');
     const [selectedSeats, setSelectedSeats] = useState<Set<string>>(new Set());
 
@@ -47,7 +48,7 @@ export default function SeatSelectionModal({ party, courses, unitSeats, onConfir
                     <label>入口から見た教室図（空席を選択）</label>
                     <RoomDiagram
                         unitSeats={unitSeats}
-                        inside={[]}
+                        inside={inside}
                         courses={courses}
                         mode="select"
                         selectedSeatIds={selectedSeats}
@@ -63,7 +64,14 @@ export default function SeatSelectionModal({ party, courses, unitSeats, onConfir
                         className="primary"
                         onClick={() => {
                             if (!isConfirmDisabled) {
-                                onConfirm(selectedCourseId, Array.from(selectedSeats));
+                                // Convert selected seat IDs to SeatDetail objects
+                                const selectedSeatDetails = Array.from(selectedSeats)
+                                    .map(seatId => {
+                                        const seat = unitSeats.find(s => s.id === seatId);
+                                        return seat ? { id: seat.id, tableNumber: seat.tableNumber, seatIndex: seat.seatIndex } : null;
+                                    })
+                                    .filter((s): s is SeatDetail => s !== null);
+                                onConfirm(selectedCourseId, selectedSeatDetails);
                             }
                         }}
                         disabled={isConfirmDisabled}

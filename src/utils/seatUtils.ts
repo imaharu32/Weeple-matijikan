@@ -157,18 +157,20 @@ export function getTableSeatsInfo(
 		const info: TableSeatInfo = {
 			id: seat.id,
 			seatIndex: seat.seatIndex,
-			occupiedByInsideId: seat.occupiedByInsideId,
 		};
 
-		if (seat.occupiedByInsideId) {
-			const insideData = inside.find((i) => i.id === seat.occupiedByInsideId);
-			if (insideData) {
-				info.occupantSize = insideData.size;
-				const now = Date.now();
-				const exitMs = new Date(insideData.exitAt).getTime();
-				const remainMs = Math.max(0, exitMs - now);
-				info.remainingMinutes = Math.ceil(remainMs / 60000);
-			}
+		// Find which Inside group is using this seat
+		const insideUsingThisSeat = inside.find((insideEntry) =>
+			insideEntry.seats?.some((s) => s.id === seat.id)
+		);
+
+		if (insideUsingThisSeat) {
+			info.occupiedByInsideId = insideUsingThisSeat.id;
+			info.occupantSize = insideUsingThisSeat.size;
+			const now = Date.now();
+			const exitMs = new Date(insideUsingThisSeat.exitAt).getTime();
+			const remainMs = Math.max(0, exitMs - now);
+			info.remainingMinutes = Math.ceil(remainMs / 60000);
 		}
 
 		return info;
@@ -178,18 +180,20 @@ export function getTableSeatsInfo(
 /**
  * 特定のInsideが使用している座席スパンを取得
  * @param insideId
- * @param unitSeats
+ * @param inside Inside配列
  * @returns { tableNumber, startSeatIndex, count }
  */
 export function getSeatsOccupiedByInside(
 	insideId: string,
-	unitSeats: UnitSeat[]
+	inside: Inside[]
 ): { tableNumber: number; startSeatIndex: number; count: number } | null {
-	const occupied = unitSeats.filter((s) => s.occupiedByInsideId === insideId);
-	if (occupied.length === 0) return null;
+	const insideEntry = inside.find((i) => i.id === insideId);
+	if (!insideEntry || !insideEntry.seats || insideEntry.seats.length === 0) return null;
 
-	const table = occupied[0].tableNumber;
-	const indices = occupied.map((s) => s.seatIndex).sort((a, b) => a - b);
+	const seats = insideEntry.seats;
+	// Assume all seats are in the same table for simplicity
+	const table = seats[0].tableNumber;
+	const indices = seats.map((s) => s.seatIndex).sort((a, b) => a - b);
 	const start = indices[0];
 	const count = indices.length;
 
