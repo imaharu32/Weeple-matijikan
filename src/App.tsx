@@ -245,8 +245,8 @@ function App() {
 	};
 
 	const estimates = useMemo(
-		() => estimateWaitingTimeWithSeats(queue, inside, [], courses),
-		[queue, inside, courses]
+		() => estimateWaitingTimeWithSeats(queue, inside, allUnitSeats, courses),
+		[queue, inside, allUnitSeats, courses]
 	);
 	const { keys: groupedHistoryKeys, map: groupedHistoryMap } = useMemo(() => groupHistoryByDate(history), [history]);
 
