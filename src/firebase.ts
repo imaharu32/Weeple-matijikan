@@ -1,6 +1,6 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getFirestore, connectFirestoreEmulator } from "firebase/firestore";
+import { getFirestore} from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 // TODO: Add SDKs for Firebase products that you want to use
