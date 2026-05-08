@@ -8,6 +8,7 @@ import QueueList from './components/QueueList';
 import InsideList from './components/InsideList';
 import SeatView from './components/SeatView';
 import SeatSelectionModal from './components/SeatSelectionModal';
+import RoomDiagram from './components/RoomDiagram';
 import {
 	addPartyToQueue,
 	removePartyFromQueue,
@@ -31,6 +32,215 @@ import {
 	estimateForNewParty,
 } from './utils';
 import { useErrorMessage, useModals, useMultiSelect } from './hooks';
+
+type InsideDetailModalProps = {
+	inside: Inside;
+	allInside: Inside[];
+	courses: Course[];
+	unitSeats: UnitSeat[];
+	onClose: () => void;
+	onSave: (id: string, updates: Partial<Inside>) => void | Promise<void>;
+	onCheckout: (id: string) => void;
+	onDelete: (id: string) => void;
+};
+
+function InsideDetailModal({ inside, allInside, courses, unitSeats, onClose, onSave, onCheckout, onDelete }: InsideDetailModalProps) {
+	const [size, setSize] = useState<number>(inside.size);
+	const [note, setNote] = useState<string>(inside.note ?? '');
+	const [courseId, setCourseId] = useState<string>(inside.courseId);
+	const [isEditingSeats, setIsEditingSeats] = useState(false);
+	const [selectedSeatIds, setSelectedSeatIds] = useState<Set<string>>(new Set(inside.seats.map((seat) => seat.id)));
+	const [isSaving, setIsSaving] = useState(false);
+
+	useEffect(() => {
+		setSize(inside.size);
+		setNote(inside.note ?? '');
+		setCourseId(inside.courseId);
+		setIsEditingSeats(false);
+		setSelectedSeatIds(new Set(inside.seats.map((seat) => seat.id)));
+	}, [inside.id, inside.size, inside.note, inside.courseId, inside.seats]);
+
+	const selectedCourse = useMemo(
+		() => courses.find((course) => course.id === courseId) ?? courses.find((course) => course.id === inside.courseId) ?? null,
+		[courses, courseId, inside.courseId]
+	);
+
+	const baseMinutes = (selectedCourse?.minutes ?? 0) + 7;
+	const previewExitAt = useMemo(() => {
+		const enterAtMs = new Date(inside.enterAt).getTime();
+		return new Date(enterAtMs + Math.max(0, baseMinutes) * 60000).toISOString();
+	}, [inside.enterAt, baseMinutes]);
+
+	const remainingMinutes = Math.max(0, Math.ceil((new Date(inside.exitAt).getTime() - Date.now()) / 60000));
+	const previewRemainingMinutes = Math.max(0, Math.ceil((new Date(previewExitAt).getTime() - Date.now()) / 60000));
+	const seatLabels = inside.seats.map((seat) => `T${seat.tableNumber}-${seat.seatIndex + 1}`);
+	const selectedSeatDetails = useMemo(
+		() =>
+			Array.from(selectedSeatIds)
+				.map((seatId) => unitSeats.find((seat) => seat.id === seatId))
+				.filter((seat): seat is UnitSeat => !!seat)
+				.map((seat) => ({ id: seat.id, tableNumber: seat.tableNumber, seatIndex: seat.seatIndex })),
+		[selectedSeatIds, unitSeats]
+	);
+	const seatSelectionIsValid = selectedSeatIds.size === size;
+
+	const handleSave = async () => {
+		if (!seatSelectionIsValid) return;
+		setIsSaving(true);
+		try {
+			await onSave(inside.id, {
+				size,
+				note,
+				courseId: selectedCourse?.id ?? inside.courseId,
+				exitAt: previewExitAt,
+				seats: selectedSeatDetails,
+			});
+		} finally {
+			setIsSaving(false);
+		}
+	};
+
+	const handleSaveSeats = async () => {
+		if (!seatSelectionIsValid) return;
+		setIsSaving(true);
+		try {
+			await onSave(inside.id, {
+				size: selectedSeatDetails.length,
+				seats: selectedSeatDetails,
+			});
+			setSize(selectedSeatDetails.length);
+			setIsEditingSeats(false);
+		} finally {
+			setIsSaving(false);
+		}
+	};
+
+	return (
+		<div className="modal-overlay" onClick={onClose}>
+			<div className="modal-content inside-detail-modal" onClick={(e) => e.stopPropagation()}>
+				<div className="inside-detail-header">
+					<div>
+						<h3>{inside.note ? inside.note : '店内客の詳細'}</h3>
+						<div className="inside-detail-subtitle">
+							入店: {new Date(inside.enterAt).toLocaleString()} / 退店見込み: {previewRemainingMinutes}分
+						</div>
+					</div>
+					<button className="secondary" onClick={onClose}>
+						閉じる
+					</button>
+				</div>
+
+				<div className="inside-detail-grid">
+					<div className="inside-detail-panel">
+						<label className="inside-detail-field">
+							<span>人数</span>
+							<input
+								type="number"
+								min={1}
+								value={size}
+								onChange={(e) => setSize(Math.max(1, Number(e.target.value) || 1))}
+							/>
+						</label>
+
+						<label className="inside-detail-field">
+							<span>コース</span>
+							<select value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+								{courses.map((course) => (
+									<option key={course.id} value={course.id}>
+										{course.name}
+									</option>
+								))}
+							</select>
+						</label>
+
+						<div className="inside-detail-field">
+							<span>メモ</span>
+							<textarea
+								value={note}
+								onChange={(e) => setNote(e.target.value)}
+								placeholder="メモを入力"
+								rows={4}
+							/>
+						</div>
+
+						<div className="inside-detail-summary">
+							<div>現在の残り: {remainingMinutes}分</div>
+							<div>コース変更後の見込み: {previewRemainingMinutes}分</div>
+							<div>席: {seatLabels.length > 0 ? seatLabels.join(' / ') : '未設定'}</div>
+							<div>席数と人数は一致している必要があります</div>
+						</div>
+
+						<div className="inside-detail-actions">
+							<button className="secondary" onClick={() => onCheckout(inside.id)}>
+								退店
+							</button>
+							<button className="secondary" onClick={() => onDelete(inside.id)}>
+								削除
+							</button>
+							<button className="secondary" onClick={() => setIsEditingSeats((current) => !current)}>
+								{isEditingSeats ? '席変更を閉じる' : '席を変更'}
+							</button>
+							<button className="primary" onClick={handleSave} disabled={isSaving || !seatSelectionIsValid}>
+								{isSaving ? '保存中...' : '保存'}
+							</button>
+						</div>
+						{!seatSelectionIsValid && (
+							<div className="note-preview">人数と選択席数を一致させてください。</div>
+						)}
+					</div>
+
+					<div className="inside-detail-panel inside-detail-panel--diagram">
+						<div className="inside-detail-field inside-detail-field--label">いる席（図）</div>
+						<RoomDiagram
+							unitSeats={unitSeats}
+							inside={allInside}
+							courses={courses}
+							mode="view"
+							selectedInsideIds={new Set([inside.id])}
+							focusInsideId={inside.id}
+						/>
+						{isEditingSeats && (
+							<div className="inside-seat-edit">
+								<div className="inside-detail-field inside-detail-field--label">席を変更</div>
+								<div className="seat-modal-note">
+									現在の席は除外して表示しています。空席を人数分選んでください。
+								</div>
+								<RoomDiagram
+									unitSeats={unitSeats}
+									inside={allInside.filter((item) => item.id !== inside.id)}
+									courses={courses}
+									mode="select"
+									selectedSeatIds={selectedSeatIds}
+									onSeatClick={(seatId, occupiedByInsideId) => {
+										if (occupiedByInsideId) return;
+										setSelectedSeatIds((current) => {
+											const next = new Set(current);
+											if (next.has(seatId)) {
+												next.delete(seatId);
+											} else {
+												if (next.size >= size) return current;
+												next.add(seatId);
+											}
+											return next;
+										});
+									}}
+								/>
+								<div className="inside-detail-actions">
+									<button className="secondary" onClick={() => setSelectedSeatIds(new Set(inside.seats.map((seat) => seat.id)))}>
+										元に戻す
+									</button>
+									<button className="primary" onClick={handleSaveSeats} disabled={isSaving || !seatSelectionIsValid}>
+										{isSaving ? '保存中...' : 'この席に変更'}
+									</button>
+								</div>
+							</div>
+						)}
+					</div>
+				</div>
+			</div>
+		</div>
+	);
+}
 
 function App() {
 	const defaultState = getDefaultState();
@@ -64,6 +274,11 @@ function App() {
 	const selectedInside = useMultiSelect();
 	const [showSeatSelectionModal, setShowSeatSelectionModal] = useState(false);
 	const [selectedPartyForSeats, setSelectedPartyForSeats] = useState<Party | null>(null);
+	const [selectedInsideDetailId, setSelectedInsideDetailId] = useState<string | null>(null);
+	const selectedInsideDetail = useMemo(
+		() => inside.find((item) => item.id === selectedInsideDetailId) ?? null,
+		[inside, selectedInsideDetailId]
+	);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -244,6 +459,18 @@ function App() {
 		}
 	};
 
+	const handleUpdateInsideDetail = async (id: string, partial: Partial<Inside>) => {
+		const previousInside = inside;
+		setInside((current) => current.map((item) => (item.id === id ? { ...item, ...partial } : item)));
+		try {
+			await updateInsideEntry(shopId, id, partial);
+		} catch (error) {
+			console.error('update inside detail error', error);
+			setInside(previousInside);
+			setErrorMessage('店内レコードの更新に失敗しました。');
+		}
+	};
+
 	const estimates = useMemo(
 		() => estimateWaitingTimeWithSeats(queue, inside, allUnitSeats, courses),
 		[queue, inside, allUnitSeats, courses]
@@ -327,6 +554,7 @@ function App() {
 						onCheckout={handleCheckout}
 						onDelete={handleDeleteInside}
 						onUpdateInside={handleUpdateInside}
+						onSelectInside={(insideId) => setSelectedInsideDetailId(insideId)}
 						onMultiSelect={(ids) => selectedInside.setSelected(new Set(ids))}
 						selectedInside={selectedInside.selected}
 					/>
@@ -340,8 +568,28 @@ function App() {
 					courses={courses}
 					onCheckout={handleCheckout}
 					onDelete={handleDeleteInside}
+					onSelectInside={(insideId) => setSelectedInsideDetailId(insideId)}
 				/>
 			</section>
+
+			{selectedInsideDetail && (
+				<InsideDetailModal
+					inside={selectedInsideDetail}
+					allInside={inside}
+					courses={courses}
+					unitSeats={allUnitSeats}
+					onClose={() => setSelectedInsideDetailId(null)}
+					onSave={handleUpdateInsideDetail}
+					onCheckout={(id: string) => {
+						void handleCheckout(id);
+						setSelectedInsideDetailId(null);
+					}}
+					onDelete={(id: string) => {
+						void handleDeleteInside(id);
+						setSelectedInsideDetailId(null);
+					}}
+				/>
+			)}
 
 			{showHistoryModal && (
 				<div className="modal-overlay" onClick={() => setShowHistoryModal(false)}>

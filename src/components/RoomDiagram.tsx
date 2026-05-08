@@ -11,8 +11,10 @@ type Props = {
 	mode: SeatMode;
 	selectedSeatIds?: Set<string>;
 	selectedInsideIds?: Set<string>;
+	focusInsideId?: string;
 	multiSelectMode?: boolean;
 	onSeatClick?: (seatId: string, occupiedByInsideId?: string) => void;
+	onInsideClick?: (insideId: string) => void;
 	onCheckout?: (insideId: string) => void;
 };
 
@@ -41,8 +43,10 @@ export default function RoomDiagram({
 	mode,
 	selectedSeatIds,
 	selectedInsideIds,
+	focusInsideId,
 	multiSelectMode,
 	onSeatClick,
+	onInsideClick,
 	onCheckout,
 }: Props) {
 	const courseMap = useMemo(() => new Map(courses.map((course) => [course.id, course])), [courses]);
@@ -78,6 +82,7 @@ export default function RoomDiagram({
 								const course = isOccupied && insideId ? courseMap.get(inside.find((item) => item.id === insideId)?.courseId ?? '') : null;
 								const isSeatSelected = mode === 'select' ? selectedSeatIds?.has(seatId) : false;
 								const isGroupSelected = mode === 'view' && isOccupied && !!insideId && selectedInsideIds?.has(insideId);
+								const isFocusedInside = mode === 'view' && isOccupied && !!insideId && focusInsideId === insideId;
 								const positionClass = `room-seat--${SEAT_POSITIONS[seatIndex]}`;
 
 								return (
@@ -85,7 +90,7 @@ export default function RoomDiagram({
 										key={seatId}
 										className={`room-seat ${positionClass} ${isOccupied ? 'occupied' : 'empty'} ${
 											isSeatSelected || isGroupSelected ? 'selected' : ''
-										}`}
+										} ${isFocusedInside ? 'focused' : ''}`}
 										tabIndex={mode === 'select' && isOccupied ? -1 : 0}
 										onClick={() => {
 											if (!onSeatClick) return;
@@ -94,11 +99,24 @@ export default function RoomDiagram({
 										}}
 										role="button"
 										aria-disabled={mode === 'select' && isOccupied}
+										aria-label={mode === 'view' && isOccupied && insideId ? '客の詳細を開く' : undefined}
 										style={
 											mode === 'view' && isOccupied && insideId
-												? { backgroundColor: groupColorMap.get(insideId) ?? '#fff' }
+												? {
+													backgroundColor: groupColorMap.get(insideId) ?? '#fff',
+													borderColor: isFocusedInside ? 'var(--primary)' : undefined,
+													boxShadow: isFocusedInside
+														? '0 0 0 4px rgba(91, 124, 92, 0.22), 0 10px 22px rgba(0, 0, 0, 0.18)'
+														: undefined,
+												}
 												: undefined
 										}
+										onKeyDown={(e) => {
+											if (mode === 'view' && isOccupied && insideId && (e.key === 'Enter' || e.key === ' ')) {
+												e.preventDefault();
+												onInsideClick?.(insideId);
+											}
+										}}
 									>
 										{mode === 'select' ? (
 											<div className="room-seat-select-content">
@@ -116,6 +134,17 @@ export default function RoomDiagram({
 												<div className="room-seat-course">{course?.name ?? '?'}</div>
 												<div className="room-seat-remaining">残り {seatInfo.remainingMinutes}分</div>
 												<div className="room-seat-actions">
+													{mode === 'view' && isOccupied && insideId && onInsideClick && (
+														<button
+															className="btn-seat-details"
+															onClick={(e) => {
+																e.stopPropagation();
+																onInsideClick(insideId);
+															}}
+														>
+															詳細
+														</button>
+													)}
 													{!multiSelectMode && onCheckout && insideId && (
 														<button
 															className="btn-seat-checkout"

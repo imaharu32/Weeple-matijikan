@@ -8,6 +8,7 @@ type Props = {
 	onCheckout: (id: string) => void;
 	onDelete: (id: string) => void;
 	onUpdateInside: (id: string, size: number, note: string) => void;
+	onSelectInside: (id: string) => void;
 	onMultiSelect: (ids: string[]) => void;
 	selectedInside: Set<string>;
 };
@@ -18,6 +19,7 @@ export default function InsideList({
 	onCheckout,
 	onDelete,
 	onUpdateInside,
+	onSelectInside,
 	onMultiSelect,
 	selectedInside,
 }: Props) {
@@ -37,7 +39,9 @@ export default function InsideList({
 				newSelected.add(id);
 			}
 			onMultiSelect(Array.from(newSelected));
+			return;
 		}
+		onSelectInside(id);
 	};
 
 	return (
@@ -93,6 +97,7 @@ export default function InsideList({
 										onClick={(e) => e.stopPropagation()}
 									/>
 								</div>
+								{(i.note || '').trim() ? <div className="note-preview">メモ: {i.note}</div> : null}
 								<div className="meta">
 									{course ? course.name : i.courseId} ／ 残り: {remainMin}分
 								</div>

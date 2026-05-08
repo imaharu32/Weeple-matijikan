@@ -8,9 +8,10 @@ type Props = {
 	courses: Course[];
 	onCheckout: (id: string) => void;
 	onDelete: (id: string) => void;
+	onSelectInside: (id: string) => void;
 };
 
-export default function SeatView({ unitSeats, inside, courses, onCheckout, onDelete }: Props) {
+export default function SeatView({ unitSeats, inside, courses, onCheckout, onDelete, onSelectInside }: Props) {
 	const [multiSelectMode, setMultiSelectMode] = useState(false);
 	const [selectedInsideIds, setSelectedInsideIds] = useState<Set<string>>(new Set());
 
@@ -48,6 +49,7 @@ export default function SeatView({ unitSeats, inside, courses, onCheckout, onDel
 				multiSelectMode={multiSelectMode}
 				selectedInsideIds={selectedInsideIds}
 				onSeatClick={handleSeatClick}
+				onInsideClick={onSelectInside}
 				onCheckout={onCheckout}
 			/>
 
