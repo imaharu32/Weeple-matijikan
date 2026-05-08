@@ -129,7 +129,6 @@ function EnterControls({
 	onEnter: (partyId: string) => void;
 	onRemove: (partyId: string) => void;
 }) {
-	const [selectedCourseId, setSelectedCourseId] = useState<string>('');
 
 	return (
 		<div className="enter-controls">
