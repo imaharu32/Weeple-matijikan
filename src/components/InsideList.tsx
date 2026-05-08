@@ -1,48 +1,161 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Inside, Course } from '../types';
+import { getRemainingMinutes } from '../utils';
 
 type Props = {
 	inside: Inside[];
 	courses: Course[];
-	onCheckout: (id: string) => void; // 退店して履歴に記録
-	onDelete: (id: string) => void;   // 履歴に残さず削除
+	onCheckout: (id: string) => void;
+	onDelete: (id: string) => void;
+	onUpdateInside: (id: string, size: number, note: string) => void;
+	onMultiSelect: (ids: string[]) => void;
+	selectedInside: Set<string>;
 };
 
-export default function InsideList({ inside, courses, onCheckout, onDelete }: Props) {
+export default function InsideList({
+	inside,
+	courses,
+	onCheckout,
+	onDelete,
+	onUpdateInside,
+	onMultiSelect,
+	selectedInside,
+}: Props) {
+	const [multiSelectMode, setMultiSelectMode] = useState(false);
 	const findCourse = (id: string) => courses.find((c) => c.id === id);
-	const now = Date.now();
 
-	// exitAt（残り時間）で昇順にソートして、早く出る順に表示する
 	const sorted = [...inside].sort(
 		(a, b) => new Date(a.exitAt).getTime() - new Date(b.exitAt).getTime()
 	);
 
+	const handleInsideClick = (id: string) => {
+		if (multiSelectMode) {
+			const newSelected = new Set(selectedInside);
+			if (newSelected.has(id)) {
+				newSelected.delete(id);
+			} else {
+				newSelected.add(id);
+			}
+			onMultiSelect(Array.from(newSelected));
+		}
+	};
+
 	return (
 		<div className="inside-list">
-			<h3>店内（{inside.reduce((s, p) => s + p.size, 0)}名）</h3>
+			<div className="list-header">
+				<h3>店内（{inside.reduce((s, p) => s + p.size, 0)}名）</h3>
+				<button
+					className="toggle-button"
+					onClick={() => {
+						setMultiSelectMode(!multiSelectMode);
+						if (!multiSelectMode) {
+							onMultiSelect([]);
+						}
+					}}
+				>
+					{multiSelectMode ? '通常に戻す' : '複数選択'}
+				</button>
+			</div>
 			<ul>
 				{sorted.map((i) => {
-					const exit = new Date(i.exitAt).getTime();
-					const remainMs = Math.max(0, exit - now);
-					const remainMin = Math.ceil(remainMs / 60000);
+					const remainMin = getRemainingMinutes(i.exitAt);
 					const course = findCourse(i.courseId);
+					const isSelected = selectedInside.has(i.id);
+
 					return (
-						<li key={i.id} className="card inside-card">
+						<li
+							key={i.id}
+							className={`card inside-card ${isSelected ? 'selected' : ''}`}
+							onClick={() => handleInsideClick(i.id)}
+						>
 							<div className="card-left">
-								<div className="badge inside-badge">{i.size}名</div>
+								<div className="badge inside-badge editable">
+									<input
+										type="number"
+										min="1"
+										value={i.size}
+										onChange={(e) => {
+											const newSize = Math.max(1, parseInt(e.target.value) || 1);
+											onUpdateInside(i.id, newSize, i.note || '');
+										}}
+										onClick={(e) => e.stopPropagation()}
+									/>
+									名
+								</div>
 							</div>
 							<div className="card-body">
-								<div className="party-note">{i.note || 'メモなし'}</div>
-								<div className="meta">{course ? course.name : i.courseId} ／ 残り: {remainMin}分</div>
+								<div className="party-note editable">
+									<input
+										type="text"
+										value={i.note || ''}
+										placeholder="メモを追加"
+										onChange={(e) => onUpdateInside(i.id, i.size, e.target.value)}
+										onClick={(e) => e.stopPropagation()}
+									/>
+								</div>
+								<div className="meta">
+									{course ? course.name : i.courseId} ／ 残り: {remainMin}分
+								</div>
 								<div className="card-actions">
-									<button onClick={() => onCheckout(i.id)} className="primary">退店（履歴に記録）</button>
-									<button onClick={() => onDelete(i.id)} className="secondary">削除（履歴に残さない）</button>
+									<button
+										onClick={() => onCheckout(i.id)}
+										className="btn-small btn-checkout"
+									>
+										退店
+									</button>
+									<button
+										onClick={() => onDelete(i.id)}
+										className="btn-small btn-secondary"
+									>
+										削除
+									</button>
 								</div>
 							</div>
 						</li>
 					);
 				})}
 			</ul>
+
+			{multiSelectMode && selectedInside.size > 0 && (
+				<div className="list-actions">
+					<div className="selected-info">{selectedInside.size}組選択中</div>
+					<div className="action-buttons">
+						<button
+							className="btn-action btn-checkout-multi"
+							onClick={() => {
+								Array.from(selectedInside).forEach((id) => {
+									onCheckout(id);
+								});
+								setMultiSelectMode(false);
+								onMultiSelect([]);
+							}}
+						>
+							選択を退店
+						</button>
+						<button
+							className="btn-action btn-delete-multi"
+							onClick={() => {
+								Array.from(selectedInside).forEach((id) => {
+									onDelete(id);
+								});
+								setMultiSelectMode(false);
+								onMultiSelect([]);
+							}}
+						>
+							選択を削除
+						</button>
+						<button
+							className="btn-action btn-cancel"
+							onClick={() => {
+								setMultiSelectMode(false);
+								onMultiSelect([]);
+							}}
+						>
+							キャンセル
+						</button>
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

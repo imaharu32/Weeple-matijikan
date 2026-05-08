@@ -12,6 +12,26 @@ export type Inside = {
 	courseId: string;
 	enterAt: string; // ISO
 	exitAt: string; // ISO
+	seatId?: string; // 単一座席ID（互換性用）
+	seatIds?: string[]; // 複数座席を占有する場合の座席IDリスト
+};
+
+export type Seat = {
+	id: string;
+	tableNumber: number; // テーブル番号
+	capacity: number; // 座席数
+	insideId?: string; // 現在座っているInside ID
+};
+
+/**
+ * 1人単位の座席（新しい座席管理システム）
+ * 6人席を6個の1人単位座席に分割して管理
+ */
+export type UnitSeat = {
+	id: string; // "table_1_0" のような形（一意）
+	tableNumber: number; // 1-6（6人席 6個のテーブル番号）
+	seatIndex: number; // 0-5（テーブル内の座席インデックス）
+	occupiedByInsideId?: string; // 現在使用中の Inside ID（null なら空席）
 };
 
 export type Course = {
@@ -27,10 +47,13 @@ export type HistoryEntry = {
 	courseId?: string;
 	enterAt?: string; // ISO - optional if not available
 	exitAt: string; // ISO - when removed/checked out
+	seatId?: string;
+	seatIds?: string[];
 };
 
 export type Settings = {
 	maxCapacity: number;
+	seats?: Seat[];
 };
 
 export type AppState = {
@@ -39,4 +62,5 @@ export type AppState = {
 	courses: Course[];
 	history?: HistoryEntry[];
 	settings: Settings;
+	unitSeats?: UnitSeat[];
 };
