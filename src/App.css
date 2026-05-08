@@ -969,8 +969,32 @@ textarea {
 }
 
 .room-diagram--select .room-seat.occupied {
-	opacity: 0.55;
+	/* 選択モードでは使用中の席を目立たせる */
+	opacity: 1; /* 不透明にして色で判別 */
 	cursor: not-allowed;
+	background: linear-gradient(135deg, #ffecec, #ffdede); /* 赤系の薄いグラデで注意を促す */
+	border: 2px solid #e06a63; /* 目立つ枠線 */
+	box-shadow: 0 2px 8px rgba(224,106,99,0.18);
+	color: #6a0b08;
+}
+
+.room-diagram--select .room-seat.occupied .room-seat-status,
+.room-diagram--select .room-seat.occupied .room-seat-number,
+.room-diagram--select .room-seat.occupied .room-seat-course {
+	color: #6a0b08; /* テキストも強調色に */
+}
+
+.room-diagram--select .room-seat.occupied:after {
+	/* 小さな使用中ラベルを右上に表示 */
+	content: "使用中";
+	position: absolute;
+	top: 6px;
+	right: 8px;
+	background: #e06a63;
+	color: white;
+	font-size: 11px;
+	padding: 2px 6px;
+	border-radius: 999px;
 }
 
 .room-diagram--select .room-seat.selected {
