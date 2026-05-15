@@ -31,7 +31,7 @@ export default function InsideDetailModal({ inside, courses, unitSeats, onClose,
 		[courses, courseId, inside.courseId]
 	);
 
-	const baseMinutes = (selectedCourse?.minutes ?? 0) + 7;
+	const baseMinutes = (selectedCourse?.minutes ?? 0) + 15;
 	const previewExitAt = useMemo(() => {
 		const enterAtMs = new Date(inside.enterAt).getTime();
 		const nextMinutes = Math.max(0, baseMinutes + Math.max(0, extraMinutes));

@@ -66,7 +66,7 @@ function InsideDetailModal({ inside, allInside, courses, unitSeats, onClose, onS
 		[courses, courseId, inside.courseId]
 	);
 
-	const baseMinutes = (selectedCourse?.minutes ?? 0) + 7;
+	const baseMinutes = (selectedCourse?.minutes ?? 0) + 15;
 	const previewExitAt = useMemo(() => {
 		const enterAtMs = new Date(inside.enterAt).getTime();
 		return new Date(enterAtMs + Math.max(0, baseMinutes) * 60000).toISOString();
@@ -380,7 +380,7 @@ function App() {
 		if (!course) return;
 
 		const enterAt = nowIso();
-		const exitAt = addMinutesISO(enterAt, course.minutes + 7);
+		const exitAt = addMinutesISO(enterAt, course.minutes + 15);
 		const previousQueue = queue;
 		const previousInside = inside;
 		const tempInsideId = uid('in_');
