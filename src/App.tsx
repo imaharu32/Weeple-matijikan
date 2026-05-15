@@ -9,6 +9,7 @@ import InsideList from './components/InsideList';
 import SeatView from './components/SeatView';
 import SeatSelectionModal from './components/SeatSelectionModal';
 import RoomDiagram from './components/RoomDiagram';
+import WaitTime from './components/WaitTime';
 import {
 	addPartyToQueue,
 	removePartyFromQueue,
@@ -253,6 +254,7 @@ function App() {
 	const FIXED_MAX_CAPACITY = 36; // 6人席 × 6 = 36人
 	const [maxCapacity] = useState<number>(FIXED_MAX_CAPACITY);
 
+
 	// Generate all 6x6 unit seats for UI (static)
 	const allUnitSeats = useMemo<UnitSeat[]>(() => {
 		const seats: UnitSeat[] = [];
@@ -268,6 +270,8 @@ function App() {
 		}
 		return seats;
 	}, []);
+
+
 	const { showAddModal, setShowAddModal, showHistoryModal, setShowHistoryModal } = useModals();
 	const { message: errorMessage, setMessage: setErrorMessage } = useErrorMessage(5000);
 	const selectedParties = useMultiSelect();
@@ -475,11 +479,33 @@ function App() {
 		() => estimateWaitingTimeWithSeats(queue, inside, allUnitSeats, courses),
 		[queue, inside, allUnitSeats, courses]
 	);
+
 	const { keys: groupedHistoryKeys, map: groupedHistoryMap } = useMemo(() => groupHistoryByDate(history), [history]);
 
 	const estimateForNewPartyPreview = (size: number) => {
 		return estimateForNewParty(size, queue, inside, allUnitSeats, courses);
 	};
+
+	// Quick wait time page for two people (render after hooks to keep hook order)
+	const isWaitTimePage = typeof window !== 'undefined' && window.location && window.location.pathname === '/wait_time';
+
+	// tick to force periodic recalculation while on the wait page
+	const [waitTick, setWaitTick] = useState(0);
+	useEffect(() => {
+		if (!isWaitTimePage) return;
+		const id = setInterval(() => setWaitTick((t) => t + 1), 30000); // 30秒ごと
+		return () => clearInterval(id);
+	}, [isWaitTimePage]);
+
+	const waitMinutesForTwo = useMemo(() => {
+		// include waitTick so this memo re-computes on each tick
+		void waitTick;
+		return estimateForNewParty(2, queue, inside, allUnitSeats, courses);
+	}, [queue, inside, allUnitSeats, courses, waitTick]);
+
+	if (isWaitTimePage) {
+		return <WaitTime minutes={waitMinutesForTwo} />;
+	}
 
 	return (
 		<div className="App" style={{ padding: 16 }}>

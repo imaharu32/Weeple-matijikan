@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Course, Inside, UnitSeat } from '../types';
 import { getTableSeatsInfo } from '../utils';
 
@@ -28,12 +28,12 @@ const TABLE_POSITIONS = [
 ];
 
 const SEAT_POSITIONS = [
-	'top-left',
-	'top-center',
-	'top-right',
-	'bottom-right',
-	'bottom-center',
-	'bottom-left',
+	'r1c1',
+	'r1c2',
+	'r2c1',
+	'r2c2',
+	'r3c1',
+	'r3c2',
 ];
 
 export default function RoomDiagram({
@@ -61,11 +61,19 @@ export default function RoomDiagram({
 		return map;
 	}, [inside]);
 
+	const insideMap = useMemo(() => new Map(inside.map((i) => [i.id, i])), [inside]);
+
+	const [tooltipSeatId, setTooltipSeatId] = useState<string | null>(null);
+
 	return (
 		<div className={`room-diagram room-diagram--${mode}`}>
-			<div className="room-entrance">
-				<div className="room-entrance-label">入口</div>
-				<div className="room-entrance-arrow">↓</div>
+			<div className="room-sidebar">
+				<div className="room-sidebar-label">ボードゲーム</div>
+			</div>
+
+			<div className="room-legend">
+				<div className="legend-item"><span className="legend-dot empty"/> 空席</div>
+				<div className="legend-item"><span className="legend-dot occupied"/> 使用中</div>
 			</div>
 
 			<div className="room-floor">
@@ -75,6 +83,7 @@ export default function RoomDiagram({
 
 					return (
 						<div key={`table-${tableNum}`} className={`room-table room-table--row-${pos.row} room-table--col-${pos.col}`}>
+							<div className="room-table-label">テーブル {tableNum}</div>
 							{tableSeats.map((seatInfo, seatIndex) => {
 								const isOccupied = !!seatInfo.occupiedByInsideId;
 								const seatId = seatInfo.id;
@@ -97,6 +106,7 @@ export default function RoomDiagram({
 											if (mode === 'view' && !isOccupied) return;
 											onSeatClick(seatId, insideId);
 										}}
+										onTouchStart={() => setTooltipSeatId(seatId)}
 										role="button"
 										aria-disabled={mode === 'select' && isOccupied}
 										aria-label={mode === 'view' && isOccupied && insideId ? '客の詳細を開く' : undefined}
@@ -108,8 +118,8 @@ export default function RoomDiagram({
 													boxShadow: isFocusedInside
 														? '0 0 0 4px rgba(91, 124, 92, 0.22), 0 10px 22px rgba(0, 0, 0, 0.18)'
 														: undefined,
-												}
-												: undefined
+											}
+											: undefined
 										}
 										onKeyDown={(e) => {
 											if (mode === 'view' && isOccupied && insideId && (e.key === 'Enter' || e.key === ' ')) {
@@ -118,6 +128,9 @@ export default function RoomDiagram({
 											}
 										}}
 									>
+										<div className="status-dot-wrapper">
+											<div className={`status-dot ${isOccupied ? 'occupied' : 'empty'}`} />
+										</div>
 										{mode === 'select' ? (
 											<div className="room-seat-select-content">
 												<div className="room-seat-number">{seatInfo.seatIndex + 1}</div>
@@ -127,12 +140,21 @@ export default function RoomDiagram({
 											</div>
 										) : isOccupied ? (
 											<div className="room-seat-view-content">
-												<div className="room-seat-topline">
-													<span className="room-seat-name">席 {seatInfo.seatIndex + 1}</span>
-													<span className="room-seat-count">{seatInfo.occupantSize}名</span>
+												<div className="room-seat-info">
+													<div className="room-seat-line1">
+														<span className="room-seat-name">席 {seatInfo.seatIndex + 1}</span>
+														<span className="room-seat-count">{seatInfo.occupantSize}名</span>
+													</div>
+													<div className="room-seat-line2">
+														<span className="room-seat-course">{course?.name ?? '?'}</span>
+														<span className="room-seat-remaining">残り {seatInfo.remainingMinutes}分</span>
+													</div>
+													<div className={`seat-tooltip ${tooltipSeatId === seatId ? 'open' : ''}`}>
+														<div className="tooltip-name">{insideMap.get(insideId ?? '')?.id ?? '不明'}</div>
+														<div className="tooltip-course">{course?.name ?? '?'}</div>
+														<div className="tooltip-remaining">残り {seatInfo.remainingMinutes}分</div>
+													</div>
 												</div>
-												<div className="room-seat-course">{course?.name ?? '?'}</div>
-												<div className="room-seat-remaining">残り {seatInfo.remainingMinutes}分</div>
 												<div className="room-seat-actions">
 													{mode === 'view' && isOccupied && insideId && onInsideClick && (
 														<button
@@ -167,12 +189,21 @@ export default function RoomDiagram({
 												<div className="room-seat-status">空席</div>
 											</div>
 										)}
-									</div>
-								);
-							})}
+										</div>
+				)})}
 						</div>
 					);
 				})}
+			</div>
+
+			<div className="room-entrance">
+				<div className="room-entrance-icon" aria-hidden>
+					<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M5 12h14" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+						<path d="M13 6l6 6-6 6" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+					</svg>
+				</div>
+				<div className="room-entrance-label">入口</div>
 			</div>
 		</div>
 	);
