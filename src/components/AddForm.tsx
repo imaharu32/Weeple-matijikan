@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useRef, useEffect } from 'react';
 
 type Props = {
 	onAdd: (size: number, note?: string) => void;
@@ -13,6 +13,13 @@ type Props = {
 export default function AddForm({ onAdd, getEstimate, onAfterAdd, onCancel }: Props) {
 	const [size, setSize] = useState<number>(2);
 	const [note, setNote] = useState<string>('');
+
+	const noteRef = useRef<HTMLTextAreaElement | null>(null);
+
+	useEffect(() => {
+		// 初回表示時にメモ欄へフォーカス
+		noteRef.current?.focus();
+	}, []);
 
 	// 人数に応じた見込み（分）
 	const estimateMin = useMemo(() => {
@@ -40,7 +47,10 @@ export default function AddForm({ onAdd, getEstimate, onAfterAdd, onCancel }: Pr
 					<button
 						type="button"
 						className="size-btn-minus"
-						onClick={() => setSize(Math.max(1, size - 1))}
+						onClick={() => {
+							setSize(Math.max(1, size - 1));
+							setTimeout(() => noteRef.current?.focus(), 0);
+						}}
 						disabled={size <= 1}
 					>
 						−
@@ -55,7 +65,10 @@ export default function AddForm({ onAdd, getEstimate, onAfterAdd, onCancel }: Pr
 					<button
 						type="button"
 						className="size-btn-plus"
-						onClick={() => setSize(size + 1)}
+						onClick={() => {
+							setSize(size + 1);
+							setTimeout(() => noteRef.current?.focus(), 0);
+						}}
 					>
 						＋
 					</button>
@@ -69,6 +82,7 @@ export default function AddForm({ onAdd, getEstimate, onAfterAdd, onCancel }: Pr
 					onChange={(e) => setNote(e.target.value)}
 					placeholder="例: 小学生、家族、カップル、大学生など"
 					className="note-input"
+					ref={noteRef}
 					rows={2}
 				/>
 			</label>

@@ -49,13 +49,19 @@ export default function SeatSelectionModal({ party, courses, unitSeats, inside, 
 
                 <div className="seat-modal-section">
                     <label>コースを選択：</label>
-                    <select value={selectedCourseId} onChange={(e) => setSelectedCourseId(e.target.value)}>
+                    <div className="course-options" style={{ marginTop: 8 }}>
                         {courses.map((course) => (
-                            <option key={course.id} value={course.id}>
-                                {course.name}
-                            </option>
+                            <button
+                                key={course.id}
+                                type="button"
+                                className={"course-option" + (selectedCourseId === course.id ? ' selected' : '')}
+                                onClick={() => setSelectedCourseId(course.id)}
+                            >
+                                <div className="course-minutes">{course.minutes}分</div>
+                                <div className="course-name">{course.name}</div>
+                            </button>
                         ))}
-                    </select>
+                    </div>
                 </div>
 
                 <div className="seat-modal-section">
