@@ -10,7 +10,6 @@ import InsideDetailModal from './components/InsideDetailModal';
 import SeatView from './components/SeatView';
 import SeatSelectionModal from './components/SeatSelectionModal';
 import SeatsPerPartySizeSettings from './components/SeatsPerPartySizeSettings';
-import RoomDiagram from './components/RoomDiagram';
 import WaitTime from './components/WaitTime';
 import {
 	addPartyToQueue,
@@ -279,10 +278,7 @@ function App() {
 		}
 	};
 
-	const estimates = useMemo(
-		() => estimateWaitingTimeWithSeats(queue, inside, allUnitSeats, courses, seatsRangePerPartySize),
-		[queue, inside, allUnitSeats, courses, seatsRangePerPartySize, nowTick]
-	);
+	const estimates = estimateWaitingTimeWithSeats(queue, inside, allUnitSeats, courses, seatsRangePerPartySize);
 
 	const { keys: groupedHistoryKeys, map: groupedHistoryMap } = useMemo(() => groupHistoryByDate(history), [history]);
 
@@ -293,11 +289,7 @@ function App() {
 	// Quick wait time page for two people (render after hooks to keep hook order)
 	const isWaitTimePage = typeof window !== 'undefined' && window.location && window.location.pathname === '/wait_time';
 
-	const waitMinutesForTwo = useMemo(() => {
-		// include nowTick so this memo re-computes on each tick
-		void nowTick;
-		return estimateForNewParty(2, queue, inside, allUnitSeats, courses);
-	}, [queue, inside, allUnitSeats, courses, nowTick]);
+	const waitMinutesForTwo = estimateForNewParty(2, queue, inside, allUnitSeats, courses, seatsRangePerPartySize);
 
 	if (isWaitTimePage) {
 		return <WaitTime minutes={waitMinutesForTwo} />;
