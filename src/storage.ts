@@ -5,8 +5,22 @@ export const defaultCourses = [
 	{ id: 'c60', name: '60分コース', minutes: 60 },
 ];
 
+/**
+ * デフォルトの人数別座席占有範囲ルール
+ * 1人→1～2席、2人→2～4席、3人→3～5席など
+ */
+export const defaultSeatsRangePerPartySize: Record<number, { min: number; max: number }> = {
+	1: { min: 1, max: 2 },
+	2: { min: 2, max: 4 },
+	3: { min: 3, max: 5 },
+	4: { min: 4, max: 6 },
+	5: { min: 5, max: 6 },
+	6: { min: 6, max: 6 },
+};
+
 export const defaultSettings = {
 	maxCapacity: 20,
+	seatsRangePerPartySize: defaultSeatsRangePerPartySize,
 };
 
 /**

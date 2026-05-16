@@ -4,6 +4,7 @@
  */
 
 import { Party, Inside, UnitSeat, Course } from '../types';
+import { getSeatsRangeForPartySize } from './seatUtils';
 
 /**
  * キュー内の各パーティについて、座席割当が可能になる時刻（見込み時間）を計算
@@ -12,13 +13,15 @@ import { Party, Inside, UnitSeat, Course } from '../types';
  * @param inside - 現在店内のパーティ
  * @param unitSeats - 座席状況
  * @param courses - コース情報（参考）
+ * @param seatsRangePerPartySize - 人数ごとの座席占有範囲ルール（オプション）
  * @returns Record<partyId, estimatedMinutes>
  */
 export function estimateWaitingTimeWithSeats(
 	queue: Party[],
 	inside: Inside[],
 	unitSeats: UnitSeat[],
-	courses: Course[]
+	courses: Course[],
+	seatsRangePerPartySize?: Record<number, { min: number; max: number }>
 ): Record<string, number> {
 	const now = Date.now();
 	const estimates: Record<string, number> = {};
@@ -66,7 +69,9 @@ export function estimateWaitingTimeWithSeats(
 	// キューを順番に処理
 	for (let i = 0; i < queue.length; i++) {
 		const party = queue[i];
-		const needed = party.size;
+		// 人数から座席選択可能な範囲を取得し、最小値を見込み座席数として使用
+		const seatsRange = getSeatsRangeForPartySize(party.size, seatsRangePerPartySize);
+		const needed = seatsRange.min;
 
 		// すでに時刻が来ている退店イベントを反映
 		releaseEventsUpTo(simTime);
@@ -112,6 +117,7 @@ export function estimateWaitingTimeWithSeats(
  * @param inside - 現在の店内状況
  * @param unitSeats - 座席状況
  * @param courses - コース情報
+ * @param seatsRangePerPartySize - 人数ごとの座席占有範囲ルール（オプション）
  * @returns 見込み分数
  */
 export function estimateForNewParty(
@@ -119,7 +125,8 @@ export function estimateForNewParty(
 	queue: Party[],
 	inside: Inside[],
 	unitSeats: UnitSeat[],
-	courses: Course[]
+	courses: Course[],
+	seatsRangePerPartySize?: Record<number, { min: number; max: number }>
 ): number {
 	const tempParty: Party = {
 		id: '__tmp',
@@ -128,6 +135,6 @@ export function estimateForNewParty(
 		joinAt: new Date().toISOString(),
 	};
 	const mergedQueue = [...queue, tempParty];
-	const estimates = estimateWaitingTimeWithSeats(mergedQueue, inside, unitSeats, courses);
+	const estimates = estimateWaitingTimeWithSeats(mergedQueue, inside, unitSeats, courses, seatsRangePerPartySize);
 	return estimates.__tmp ?? 0;
 }

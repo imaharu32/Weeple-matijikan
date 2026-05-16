@@ -10,6 +10,7 @@ type Props = {
 	onMultiSelect: (partyIds: string[]) => void;
 	selectedParties: Set<string>;
 	estimates?: Record<string, number>;
+	nowTick?: number;
 };
 
 export default function QueueList({
@@ -21,7 +22,10 @@ export default function QueueList({
 	onMultiSelect,
 	selectedParties,
 	estimates,
+	nowTick,
 }: Props) {
+	// reference nowTick so component re-renders periodically
+	void nowTick;
 	const [multiSelectMode, setMultiSelectMode] = useState(false);
 	const avgMinutes =
 		courses.length > 0 ? courses.reduce((sum, course) => sum + course.minutes, 0) / courses.length : 30;
@@ -87,7 +91,7 @@ export default function QueueList({
 								/>
 							</div>
 							<div className="meta">参加: {new Date(party.joinAt).toLocaleTimeString()}</div>
-							<div className="estimate">
+						<div className={`estimate ${estimates && estimates[party.id] === 0 ? 'zero-wait-time' : ''}`}>
 								{estimates && estimates[party.id] !== undefined
 									? `入店見込み： 約${estimates[party.id]}分`
 									: `推定待ち： 約${Math.round(avgMinutes * index)}分`}

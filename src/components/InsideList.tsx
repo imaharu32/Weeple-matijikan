@@ -11,6 +11,7 @@ type Props = {
 	onSelectInside: (id: string) => void;
 	onMultiSelect: (ids: string[]) => void;
 	selectedInside: Set<string>;
+	nowTick?: number;
 };
 
 export default function InsideList({
@@ -22,7 +23,10 @@ export default function InsideList({
 	onSelectInside,
 	onMultiSelect,
 	selectedInside,
+	nowTick,
 }: Props) {
+	// reference nowTick so component re-renders periodically
+	void nowTick;
 	const [multiSelectMode, setMultiSelectMode] = useState(false);
 	const findCourse = (id: string) => courses.find((c) => c.id === id);
 
@@ -98,7 +102,7 @@ export default function InsideList({
 									/>
 								</div>
 								{(i.note || '').trim() ? <div className="note-preview">メモ: {i.note}</div> : null}
-								<div className="meta">
+							<div className={`meta ${remainMin === 0 ? 'zero-wait-time' : ''}`}>
 									{course ? course.name : i.courseId} ／ 残り: {remainMin}分
 								</div>
 								<div className="card-actions">

@@ -191,7 +191,7 @@ button:active {
 
 .history-button {
 	position: absolute;
-	right: 140px;
+	right: 280px;
 	top: 20px;
 	background: rgba(255, 255, 255, 0.2);
 	color: white;
@@ -200,6 +200,20 @@ button:active {
 }
 
 .history-button:hover {
+	background: rgba(255, 255, 255, 0.3);
+}
+
+.settings-button {
+	position: absolute;
+	right: 160px;
+	top: 20px;
+	background: rgba(255, 255, 255, 0.2);
+	color: white;
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	padding: 8px 12px;
+}
+
+.settings-button:hover {
 	background: rgba(255, 255, 255, 0.3);
 }
 
@@ -379,6 +393,14 @@ button:active {
 	font-size: 13px;
 	color: var(--primary);
 	font-weight: 700;
+}
+
+.zero-wait-time {
+	background: var(--error);
+	color: white;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-weight: 600;
 }
 
 .card-actions {

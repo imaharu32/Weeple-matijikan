@@ -199,3 +199,45 @@ export function getSeatsOccupiedByInside(
 
 	return { tableNumber: table, startSeatIndex: start, count };
 }
+
+/**
+ * デフォルトの人数別座席占有範囲を取得
+ * デフォルト: 1人→1～2席、2人→2～4席など
+ */
+export function getDefaultSeatsRangePerPartySize(): Record<number, { min: number; max: number }> {
+	return {
+		1: { min: 1, max: 2 },
+		2: { min: 2, max: 4 },
+		3: { min: 3, max: 5 },
+		4: { min: 4, max: 6 },
+		5: { min: 5, max: 6 },
+		6: { min: 6, max: 6 },
+	};
+}
+
+/**
+ * 特定の人数に対して、座席選択可能な範囲を取得
+ * @param partySize - パーティの人数
+ * @param seatsRangePerPartySize - 人数別座席占有範囲ルール（指定なければデフォルト）
+ * @returns { min, max } またはパーティサイズを上限とした範囲
+ */
+export function getSeatsRangeForPartySize(
+	partySize: number,
+	seatsRangePerPartySize?: Record<number, { min: number; max: number }>
+): { min: number; max: number } {
+	const rules = seatsRangePerPartySize || getDefaultSeatsRangePerPartySize();
+
+	if (rules[partySize]) {
+		const range = rules[partySize];
+		return {
+			min: Math.max(1, range.min),
+			max: Math.min(6, range.max),
+		};
+	}
+
+	// ルールがなければ、人数を上限とした範囲
+	return {
+		min: Math.max(1, partySize),
+		max: Math.min(6, partySize + 2),
+	};
+}

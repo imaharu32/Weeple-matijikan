@@ -58,6 +58,12 @@ export type HistoryEntry = {
 export type Settings = {
 	maxCapacity: number;
 	seats?: Seat[];
+	/**
+	 * 人数ごとの座席占有範囲ルール
+	 * 例: { 1: { min: 1, max: 2 }, 2: { min: 2, max: 4 }, 3: { min: 3, max: 5 }, ... }
+	 * 1人客は1～2席の範囲で選択可、2人客は2～4席の範囲で選択可、など
+	 */
+	seatsRangePerPartySize?: Record<number, { min: number; max: number }>;
 };
 
 export type AppState = {
