@@ -41,7 +41,8 @@ export default function NumberStepper({ value, onChange, min = 0, max = 999, ste
 				aria-label={label}
 				onChange={(e) => {
 					const n = Number(e.target.value);
-					if (!Number.isNaN(n)) onChange(clamp(n));
+					// 小数（2.5 など）は整数に丸める
+					if (!Number.isNaN(n)) onChange(clamp(Math.round(n)));
 				}}
 				onFocus={(e) => e.target.select()}
 			/>

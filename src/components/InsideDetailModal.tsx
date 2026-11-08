@@ -58,8 +58,10 @@ export default function InsideDetailModal({
 		.map((seat) => ({ id: seat.id, tableNumber: seat.tableNumber, seatIndex: seat.seatIndex }));
 	const seatsChanged =
 		selectedSeatIds.size !== originalSeatIds.size || [...selectedSeatIds].some((id) => !originalSeatIds.has(id));
+	// 画面を開いている間に、別の端末がその席を使った場合
+	const takenSeatIds = [...selectedSeatIds].filter((id) => occupiedByOthers.has(id));
 	// 席は何席でもよいが、1席以上は必要
-	const canSave = selectedSeatIds.size >= 1;
+	const canSave = selectedSeatIds.size - takenSeatIds.length >= 1 && takenSeatIds.length === 0;
 
 	const toggleSeat = (seatId: string) => {
 		if (occupiedByOthers.has(seatId)) return;
@@ -179,11 +181,24 @@ export default function InsideDetailModal({
 						)}
 					</div>
 
-					<p className={`${styles.seatHint} ${canSave ? styles.seatHintInfo : styles.seatHintNg}`}>
-						{canSave
-							? '空いている席をクリックすると追加、この組の席をクリックすると外せます。「変更を保存」で反映されます。'
-							: '席を1つ以上選んでください。'}
-					</p>
+					{takenSeatIds.length > 0 ? (
+						<div className={`${styles.seatHint} ${styles.seatHintNg}`}>
+							選んでいた席のうち {takenSeatIds.length}席が、ほかの組に使われました。
+							<button
+								type="button"
+								className={`btn btn-secondary btn-sm ${styles.hintAction}`}
+								onClick={() => setSelectedSeatIds((current) => new Set([...current].filter((id) => !occupiedByOthers.has(id))))}
+							>
+								使われた席を外す
+							</button>
+						</div>
+					) : (
+						<p className={`${styles.seatHint} ${canSave ? styles.seatHintInfo : styles.seatHintNg}`}>
+							{canSave
+								? '空いている席をクリックすると追加、この組の席をクリックすると外せます。「変更を保存」で反映されます。'
+								: '席を1つ以上選んでください。'}
+						</p>
+					)}
 
 					<RoomDiagram
 						unitSeats={unitSeats}

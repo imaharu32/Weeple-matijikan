@@ -24,8 +24,12 @@ export default function SeatSelectionModal({ party, courses, unitSeats, inside, 
 	// 開いた時点で、人数と同じ数のおすすめの席を選んでおく
 	const [selected, setSelected] = useState<Set<string>>(() => new Set(suggestSeats(party.size, unitSeats, occupied)));
 
-	const count = selected.size;
-	const isValid = count >= 1 && !!courseId;
+	// 画面を開いている間に、別の端末がその席を使った場合
+	const takenSeatIds = [...selected].filter((id) => occupied.has(id));
+	const count = selected.size - takenSeatIds.length;
+	const isValid = count >= 1 && takenSeatIds.length === 0 && !!courseId;
+	const removeTakenSeats = () =>
+		setSelected((current) => new Set([...current].filter((id) => !occupied.has(id))));
 	const course = courses.find((item) => item.id === courseId);
 	const exitPreview = (minutes: number) => formatTime(addMinutesISO(nowIso(), minutes + EXIT_BUFFER_MINUTES));
 
@@ -105,6 +109,14 @@ export default function SeatSelectionModal({ party, courses, unitSeats, inside, 
 								{count === 0 ? '席を1つ以上選んでください' : `${party.size}名で${count}席を使います`}
 							</span>
 						</div>
+						{takenSeatIds.length > 0 && (
+							<div className={styles.warning}>
+								選んでいた席のうち {takenSeatIds.length}席が、ほかの組に使われました。席を選び直してください。
+								<button type="button" className={`btn btn-secondary btn-sm ${styles.warningAction}`} onClick={removeTakenSeats}>
+									使われた席を外す
+								</button>
+							</div>
+						)}
 						{freeCount < party.size && (
 							<p className={styles.warning}>空いている席が人数より少なくなっています（空き {freeCount}席）。</p>
 						)}
