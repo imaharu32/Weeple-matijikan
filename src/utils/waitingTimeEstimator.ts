@@ -1,108 +1,78 @@
 /**
- * 座席ベースの待ち時間推定エンジン
- * 座席の占有状況と退店予定時刻から、キューのパーティの入店見込み時刻を推定
+ * 座席ベースの待ち時間の見積もり
+ *
+ * - 席は1人1席として数える（全席数より多い組は、全席を使うものとして扱う）
+ * - 店内の組は、退店予定時刻に席を空ける（予定を過ぎた組の席は、もう空いているものとして扱う）
+ * - 待ち列は並んだ順に案内する（前の組が入るまで、後ろの組は入れない）
+ * - 待ち列の組は、入店してから「一番短いコース ＋ 退店までの余裕」だけ席を使う
+ *   （入店時に設定する退店予定と同じ計算）
  */
 
+import { EXIT_BUFFER_MINUTES } from '../constants';
 import { Party, Inside, UnitSeat, Course } from '../types';
-import { getSeatsRangeForPartySize } from './seatUtils';
+
+const MINUTE = 60000;
 
 /**
- * キュー内の各パーティについて、座席割当が可能になる時刻（見込み時間）を計算
- *
- * @param queue - 待機中のパーティ
- * @param inside - 現在店内のパーティ
- * @param unitSeats - 座席状況
- * @param courses - コース情報（参考）
- * @param seatsRangePerPartySize - 人数ごとの座席占有範囲ルール（オプション）
- * @returns Record<partyId, estimatedMinutes>
+ * 待ち列の各組について、入店までの見込み（分）を返す
+ * @returns Record<partyId, 分>
  */
 export function estimateWaitingTimeWithSeats(
 	queue: Party[],
 	inside: Inside[],
 	unitSeats: UnitSeat[],
 	courses: Course[],
-	seatsRangePerPartySize?: Record<number, { min: number; max: number }>
+	now = Date.now()
 ): Record<string, number> {
-	const now = Date.now();
 	const estimates: Record<string, number> = {};
-
-	// デフォルト滞在時間（キュー内のパーティは最短コースを仮定）
-	const defaultStayMinutes = courses.length > 0 ? Math.min(...courses.map((c) => c.minutes)) : 30;
-	const defaultStayMs = defaultStayMinutes * 60000;
-
-	// 全座席数
 	const totalSeats = unitSeats.length;
 
-	// 現在の空席数：inside データから実際に占有されている座席数を計算
-	const occupiedCount = inside.reduce((sum, entry) => sum + (entry.seats?.length || 0), 0);
-	let currentAvailableSeats = totalSeats - occupiedCount;
+	// 待ち列の組の滞在時間（コース ＋ 退店までの余裕）
+	const shortestCourse = courses.length > 0 ? Math.min(...courses.map((c) => c.minutes)) : 30;
+	const stayMs = (shortestCourse + EXIT_BUFFER_MINUTES) * MINUTE;
 
-	// 退店イベントを時刻順に管理する
+	// 今の空席数
+	const occupiedCount = inside.reduce((sum, entry) => sum + (entry.seats?.length || 0), 0);
+	let available = Math.max(0, totalSeats - occupiedCount);
+
+	// 席が空く予定（時刻順）。予定を過ぎた組は、計算の最初に空く
 	type ReleaseEvent = { time: number; seats: number };
 	const releaseEvents: ReleaseEvent[] = inside
-		.map((entry) => ({
-			time: new Date(entry.exitAt).getTime(),
-			seats: entry.seats?.length || 0,
-		}))
+		.map((entry) => ({ time: new Date(entry.exitAt).getTime(), seats: entry.seats?.length || 0 }))
 		.filter((event) => event.seats > 0)
 		.sort((a, b) => a.time - b.time);
-
 	let releaseIndex = 0;
-	let simTime = now;
 
-	const releaseEventsUpTo = (time: number) => {
+	const releaseUpTo = (time: number) => {
 		while (releaseIndex < releaseEvents.length && releaseEvents[releaseIndex].time <= time) {
-			currentAvailableSeats = Math.min(totalSeats, currentAvailableSeats + releaseEvents[releaseIndex].seats);
+			available = Math.min(totalSeats, available + releaseEvents[releaseIndex].seats);
 			releaseIndex += 1;
 		}
 	};
 
-	const insertReleaseEvent = (event: ReleaseEvent) => {
-		if (event.seats <= 0) return;
+	const addReleaseEvent = (event: ReleaseEvent) => {
 		let insertAt = releaseEvents.length;
-		while (insertAt > releaseIndex && releaseEvents[insertAt - 1].time > event.time) {
-			insertAt -= 1;
-		}
+		while (insertAt > releaseIndex && releaseEvents[insertAt - 1].time > event.time) insertAt -= 1;
 		releaseEvents.splice(insertAt, 0, event);
 	};
 
-	// キューを順番に処理
-	for (let i = 0; i < queue.length; i++) {
-		const party = queue[i];
-		// 人数から座席選択可能な範囲を取得し、最小値を見込み座席数として使用
-		const seatsRange = getSeatsRangeForPartySize(party.size, seatsRangePerPartySize);
-		const needed = seatsRange.min;
+	let simTime = now;
+	for (const party of queue) {
+		// 全席数より多い組は、全席を使うものとする（そうしないと永遠に入れない）
+		const needed = Math.min(totalSeats, Math.max(1, party.size));
 
-		// すでに時刻が来ている退店イベントを反映
-		releaseEventsUpTo(simTime);
-
+		releaseUpTo(simTime);
 		let entryTime = simTime;
-
-		// 必要な席が空くまで、次の退店イベントへ進める
-		while (currentAvailableSeats < needed) {
-			if (releaseIndex >= releaseEvents.length) {
-				// これ以上空く席がない場合は、現時点を入店時刻として打ち切る
-				break;
-			}
-
+		// 必要な席数が空くまで、次に席が空く時刻へ進める
+		// （店内の組も待ち列の組もいずれ必ず退店するので、needed ≦ 全席数なら必ず入れる）
+		while (available < needed && releaseIndex < releaseEvents.length) {
 			entryTime = Math.max(entryTime, releaseEvents[releaseIndex].time);
-			releaseEventsUpTo(entryTime);
+			releaseUpTo(entryTime);
 		}
 
-		const waitMinutes = Math.ceil(Math.max(0, entryTime - now) / 60000);
-
-		estimates[party.id] = waitMinutes;
-
-		// このパーティがシミュレーション上で入店したので、座席を確保
-		currentAvailableSeats -= needed;
-
-		// このパーティの退店イベントをタイムラインに追加
-		insertReleaseEvent({
-			time: entryTime + defaultStayMs,
-			seats: needed,
-		});
-
-		// 次のパーティはこの時刻以降で計算
+		estimates[party.id] = Math.ceil(Math.max(0, entryTime - now) / MINUTE);
+		available -= needed;
+		addReleaseEvent({ time: entryTime + stayMs, seats: needed });
 		simTime = entryTime;
 	}
 
@@ -110,14 +80,7 @@ export function estimateWaitingTimeWithSeats(
 }
 
 /**
- * 新規に追加されたパーティの見込み時間を計算（プレビュー用）
- * @param size - パーティ人数
- * @param queue - 現在のキュー
- * @param inside - 現在の店内状況
- * @param unitSeats - 座席状況
- * @param courses - コース情報
- * @param seatsRangePerPartySize - 人数ごとの座席占有範囲ルール（オプション）
- * @returns 見込み分数
+ * 今から size 名で並んだ場合の入店までの見込み（分）
  */
 export function estimateForNewParty(
 	size: number,
@@ -125,15 +88,9 @@ export function estimateForNewParty(
 	inside: Inside[],
 	unitSeats: UnitSeat[],
 	courses: Course[],
-	seatsRangePerPartySize?: Record<number, { min: number; max: number }>
+	now = Date.now()
 ): number {
-	const tempParty: Party = {
-		id: '__tmp',
-		size,
-		note: '',
-		joinAt: new Date().toISOString(),
-	};
-	const mergedQueue = [...queue, tempParty];
-	const estimates = estimateWaitingTimeWithSeats(mergedQueue, inside, unitSeats, courses, seatsRangePerPartySize);
-	return estimates.__tmp ?? 0;
+	const tempParty: Party = { id: '__new', size, note: '', joinAt: new Date(now).toISOString() };
+	const estimates = estimateWaitingTimeWithSeats([...queue, tempParty], inside, unitSeats, courses, now);
+	return estimates.__new ?? 0;
 }

@@ -1,0 +1,284 @@
+/* PC では画面の高さに収め、各パネルの中だけがスクロールする */
+.app {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	min-height: 0;
+}
+
+/* 開発時だけ出す帯（デモモード / 開発用データ / 本番データに注意） */
+.envBanner {
+	padding: var(--space-1) var(--space-4);
+	font-size: var(--font-sm);
+	font-weight: 700;
+	text-align: center;
+}
+
+.envDemo {
+	background: var(--color-warning-soft);
+	color: var(--color-warning);
+}
+
+.envDev {
+	background: var(--color-primary-soft);
+	color: var(--color-primary);
+}
+
+.envDanger {
+	background: var(--color-danger);
+	color: var(--color-text-on-primary);
+}
+
+/* ===== ヘッダー ===== */
+
+.header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: var(--space-4);
+	padding: var(--space-3) var(--space-6);
+	background: var(--color-surface);
+	border-bottom: 1px solid var(--color-border);
+}
+
+.brand {
+	display: flex;
+	align-items: baseline;
+	gap: var(--space-3);
+	min-width: 0;
+}
+
+.title {
+	font-size: var(--font-xl);
+	font-weight: 800;
+	white-space: nowrap;
+}
+
+.shopName {
+	color: var(--color-text-muted);
+	font-size: var(--font-sm);
+	font-weight: 600;
+	white-space: nowrap;
+}
+
+.headerActions {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+/* ===== いまの状況 ===== */
+
+.summary {
+	display: grid;
+	grid-template-columns: repeat(3, minmax(130px, 170px)) minmax(320px, 1fr);
+	gap: var(--space-3);
+	padding: var(--space-4) var(--space-6) 0;
+}
+
+.summaryItem {
+	padding: var(--space-3) var(--space-4);
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+}
+
+.summaryLabel {
+	color: var(--color-text-muted);
+	font-size: var(--font-sm);
+	font-weight: 700;
+}
+
+.summaryValue {
+	font-size: var(--font-2xl);
+	font-weight: 800;
+	line-height: 1.25;
+}
+
+.summarySub {
+	margin-left: var(--space-2);
+	color: var(--color-text-muted);
+	font-size: var(--font-sm);
+	font-weight: 600;
+}
+
+.estimator {
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+}
+
+.estimatorRow {
+	display: flex;
+	align-items: center;
+	gap: var(--space-4);
+	margin-top: var(--space-1);
+}
+
+.estimatorValue {
+	font-size: var(--font-2xl);
+	font-weight: 800;
+	line-height: 1.25;
+}
+
+.estimatorChip {
+	font-size: var(--font-md);
+	padding: var(--space-1) var(--space-3);
+}
+
+/* ===== 3列（待ち列 / 座席 / 店内） ===== */
+
+.main {
+	flex: 1;
+	min-height: 0;
+	display: grid;
+	grid-template-columns: minmax(300px, 340px) minmax(0, 1fr) minmax(300px, 360px);
+	gap: var(--space-4);
+	padding: var(--space-4) var(--space-6) var(--space-6);
+}
+
+.queueArea,
+.seatArea,
+.insideArea {
+	min-height: 0;
+}
+
+/* ===== 下に出るお知らせ ===== */
+
+.toast {
+	position: fixed;
+	left: 50%;
+	bottom: var(--space-6);
+	z-index: var(--z-toast);
+	width: max-content;
+	max-width: min(640px, calc(100vw - 32px));
+	display: flex;
+	align-items: center;
+	gap: var(--space-4);
+	padding: var(--space-3) var(--space-3) var(--space-3) var(--space-5);
+	background: var(--color-text);
+	color: var(--color-text-on-primary);
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-lg);
+	font-weight: 600;
+	transform: translateX(-50%);
+}
+
+.toastClose {
+	flex-shrink: 0;
+	padding: var(--space-1) var(--space-3);
+	white-space: nowrap;
+	border: 1px solid rgba(255, 255, 255, 0.35);
+	border-radius: var(--radius-sm);
+	background: transparent;
+	color: inherit;
+	font-size: var(--font-sm);
+	font-weight: 600;
+	cursor: pointer;
+}
+
+.toastClose:hover {
+	background: rgba(255, 255, 255, 0.12);
+}
+
+/* 1440px 未満のPC: 左右の列を少し細くして、座席図を広く取る */
+@media (max-width: 1439px) {
+	.main {
+		grid-template-columns: minmax(270px, 290px) minmax(0, 1fr) minmax(280px, 310px);
+		gap: var(--space-3);
+		padding: var(--space-3) var(--space-4) var(--space-4);
+	}
+
+	.header,
+	.summary {
+		padding-left: var(--space-4);
+		padding-right: var(--space-4);
+	}
+}
+
+/* 画面の高さが低いとき（ノートPCなど）: 上部の集計を詰める */
+@media (max-height: 860px) {
+	.summary {
+		padding-top: var(--space-3);
+	}
+
+	.summaryItem {
+		padding: var(--space-2) var(--space-3);
+	}
+
+	.summaryValue,
+	.estimatorValue {
+		font-size: var(--font-xl);
+	}
+}
+
+/* 小さめのPC: 左に待ち列と店内、右に座席 */
+@media (max-width: 1279px) {
+	.summary {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+
+	.estimator {
+		grid-column: 1 / -1;
+	}
+
+	/* 画面に収めず、ページ全体をスクロールする */
+	.app {
+		height: auto;
+		min-height: 100vh;
+	}
+
+	.main {
+		grid-template-columns: minmax(280px, 320px) minmax(0, 1fr);
+		grid-template-rows: auto auto;
+	}
+
+	.queueArea {
+		grid-column: 1;
+		grid-row: 1;
+		height: 62vh;
+		min-height: 360px;
+	}
+
+	.insideArea {
+		grid-column: 1;
+		grid-row: 2;
+		height: 62vh;
+		min-height: 360px;
+	}
+
+	.seatArea {
+		grid-column: 2;
+		grid-row: 1 / span 2;
+	}
+}
+
+/* タブレット縦・スマホ: 1列で上から順に並べ、画面全体をスクロール */
+@media (max-width: 899px) {
+	.app {
+		height: auto;
+		min-height: 100vh;
+	}
+
+	.header {
+		flex-wrap: wrap;
+		padding: var(--space-3) var(--space-4);
+	}
+
+	.summary {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		padding: var(--space-3) var(--space-4) 0;
+	}
+
+	.main {
+		display: flex;
+		flex-direction: column;
+		padding: var(--space-3) var(--space-4) var(--space-6);
+	}
+
+	.queueArea,
+	.insideArea {
+		height: auto;
+		max-height: 70vh;
+	}
+}

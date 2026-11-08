@@ -8,21 +8,19 @@ import {
 	where,
 	deleteDoc,
 	serverTimestamp,
-	runTransaction,
+	writeBatch,
 	updateDoc,
 	onSnapshot,
 	type DocumentData,
 	type FirestoreError,
 	type QuerySnapshot,
 } from 'firebase/firestore';
-import type { Party, Inside, HistoryEntry, SeatDetail, SeatsRangePerPartySize } from '../types';
-import { parseSeatsRangePerPartySize } from '../utils/seatUtils';
+import type { Party, Inside, HistoryEntry, SeatDetail } from '../types';
 
 // shops/{shopId}/...
 const queueCol = (shopId: string) => collection(db, 'shops', shopId, 'queue');
 const insideCol = (shopId: string) => collection(db, 'shops', shopId, 'inside');
 const historyCol = (shopId: string) => collection(db, 'shops', shopId, 'history');
-const settingsDoc = (shopId: string) => doc(db, 'shops', shopId, 'meta', 'settings');
 
 type ErrorHandler = (error: FirestoreError) => void;
 
@@ -63,27 +61,27 @@ export function listenQueue(shopId: string, cb: (items: Party[]) => void, onErro
 
 // --- 店内 ---
 
-/** 待ち列 → 店内（トランザクションで queue を消して inside を作る） */
+/**
+ * 待ち列 → 店内。inside を作って queue を消す。
+ * バッチ書き込みなので、送った瞬間に手元のキャッシュに反映され、画面からすぐ消える（どちらか片方だけ成功することはない）。
+ * トランザクションはサーバーで確定するまで手元に反映されず、その間は待ち列に残って見えるので使わない。
+ */
 export async function movePartyToInside(
 	shopId: string,
-	partyId: string,
+	party: Party,
 	insideId: string,
 	fields: { courseId: string; enterAt: string; exitAt: string; seats: SeatDetail[] }
 ) {
-	const queueRef = doc(queueCol(shopId), partyId);
-	const insideRef = doc(insideCol(shopId), insideId);
-	await runTransaction(db, async (tx) => {
-		const snap = await tx.get(queueRef);
-		if (!snap.exists()) throw new Error('Party not found in queue');
-		const partyData = snap.data() as Omit<Party, 'id'>;
-		tx.set(insideRef, {
-			...partyData,
-			note: partyData.note ?? '',
-			...fields,
-			createdAt: serverTimestamp(),
-		});
-		tx.delete(queueRef);
+	const { id: partyId, ...partyData } = party;
+	const batch = writeBatch(db);
+	batch.set(doc(insideCol(shopId), insideId), {
+		...partyData,
+		note: partyData.note ?? '',
+		...fields,
+		createdAt: serverTimestamp(),
 	});
+	batch.delete(doc(queueCol(shopId), partyId));
+	await batch.commit();
 }
 
 export async function updateInsideEntry(shopId: string, insideId: string, partial: Partial<Inside>) {
@@ -95,22 +93,18 @@ export async function removeInside(shopId: string, insideId: string) {
 	await deleteDoc(doc(insideCol(shopId), insideId));
 }
 
-/** 店内 → 退店（トランザクションで history を作って inside を消す） */
-export async function checkoutFromInside(shopId: string, insideId: string, exitAt: string) {
-	const insideRef = doc(insideCol(shopId), insideId);
-	const historyRef = doc(historyCol(shopId));
-	await runTransaction(db, async (tx) => {
-		const snap = await tx.get(insideRef);
-		if (!snap.exists()) throw new Error('Inside entry not found');
-		const insideData = snap.data() as Omit<Inside, 'id'>;
-		tx.set(historyRef, {
-			...insideData,
-			note: insideData.note ?? '',
-			exitAt,
-			createdAt: serverTimestamp(),
-		});
-		tx.delete(insideRef);
+/** 店内 → 退店。history を作って inside を消す（入店と同じくバッチ書き込み） */
+export async function checkoutFromInside(shopId: string, entry: Inside, exitAt: string) {
+	const { id: insideId, ...insideData } = entry;
+	const batch = writeBatch(db);
+	batch.set(doc(historyCol(shopId)), {
+		...insideData,
+		note: insideData.note ?? '',
+		exitAt,
+		createdAt: serverTimestamp(),
 	});
+	batch.delete(doc(insideCol(shopId), insideId));
+	await batch.commit();
 }
 
 export function listenInside(shopId: string, cb: (items: Inside[]) => void, onError?: ErrorHandler) {
@@ -141,28 +135,5 @@ export function listenHistory(
 		query(historyCol(shopId), where('exitAt', '>=', sinceIso), orderBy('exitAt', 'desc')),
 		(snapshot) => cb(toItems<HistoryEntry>(snapshot)),
 		logAndForward('listenHistory', onError)
-	);
-}
-
-// --- 設定 ---
-
-/** 座席ルールを購読する。未保存・形が不正なら null を渡す */
-export function listenSeatsRangePerPartySize(
-	shopId: string,
-	cb: (rules: SeatsRangePerPartySize | null) => void,
-	onError?: ErrorHandler
-) {
-	return onSnapshot(
-		settingsDoc(shopId),
-		(snapshot) => cb(parseSeatsRangePerPartySize(snapshot.data()?.seatsRangePerPartySize)),
-		logAndForward('listenSeatsRangePerPartySize', onError)
-	);
-}
-
-export async function saveSeatsRangePerPartySize(shopId: string, rules: SeatsRangePerPartySize) {
-	await setDoc(
-		settingsDoc(shopId),
-		{ seatsRangePerPartySize: rules, updatedAt: serverTimestamp() },
-		{ merge: true }
 	);
 }

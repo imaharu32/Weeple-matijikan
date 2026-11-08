@@ -2,10 +2,7 @@
  * 座席まわりのユーティリティ
  */
 
-import { DEFAULT_SEATS_RANGE_PER_PARTY_SIZE } from '../constants';
-import { Inside, SeatsRange, SeatsRangePerPartySize, UnitSeat } from '../types';
-
-const MAX_SEATS_PER_TABLE = 6;
+import { Inside, UnitSeat } from '../types';
 
 /**
  * テーブルの座席状況（UI表示用）
@@ -48,48 +45,39 @@ export function getTableSeatsInfo(
 	});
 }
 
-/**
- * 人数に対して使える席数の範囲を返す
- * @param seatsRangePerPartySize - 人数ごとのルール（省略時は初期ルール）
- */
-export function getSeatsRangeForPartySize(
-	partySize: number,
-	seatsRangePerPartySize: SeatsRangePerPartySize = DEFAULT_SEATS_RANGE_PER_PARTY_SIZE
-): SeatsRange {
-	const range = seatsRangePerPartySize[partySize];
-	if (range) {
-		return {
-			min: Math.max(1, range.min),
-			max: Math.min(MAX_SEATS_PER_TABLE, range.max),
-		};
-	}
-
-	// ルールがなければ、人数〜人数+2席
-	return {
-		min: Math.max(1, partySize),
-		max: Math.min(MAX_SEATS_PER_TABLE, partySize + 2),
-	};
+/** 使用中の席 id の一覧（ignoreInsideId の組の席は空席として扱う） */
+export function getOccupiedSeatIds(inside: Inside[], ignoreInsideId?: string): Set<string> {
+	const ids = new Set<string>();
+	inside.forEach((entry) => {
+		if (entry.id === ignoreInsideId) return;
+		entry.seats?.forEach((seat) => ids.add(seat.id));
+	});
+	return ids;
 }
 
 /**
- * Firestore から読んだ座席ルールを検証する。
- * 形が正しくない人数の分は初期ルールで補い、何も使えなければ null を返す。
+ * おすすめの席を count 席ぶん選ぶ。
+ * 1つのテーブルに収まるなら、空きが一番少ない（ちょうど収まる）テーブルの席を番号順に選ぶ。
+ * 大きなテーブルを後の組のために残すため。収まらなければ、空きの多いテーブルから順に埋める。
+ * 空席が足りなければ、選べた分だけ返す。
  */
-export function parseSeatsRangePerPartySize(data: unknown): SeatsRangePerPartySize | null {
-	if (!data || typeof data !== 'object') return null;
+export function suggestSeats(count: number, unitSeats: UnitSeat[], occupiedSeatIds: Set<string>): string[] {
+	if (count <= 0) return [];
+	const freeByTable = new Map<number, UnitSeat[]>();
+	unitSeats
+		.filter((seat) => !occupiedSeatIds.has(seat.id))
+		.sort((a, b) => a.tableNumber - b.tableNumber || a.seatIndex - b.seatIndex)
+		.forEach((seat) => freeByTable.set(seat.tableNumber, [...(freeByTable.get(seat.tableNumber) ?? []), seat]));
 
-	const result: SeatsRangePerPartySize = { ...DEFAULT_SEATS_RANGE_PER_PARTY_SIZE };
-	let found = false;
+	const tables = Array.from(freeByTable.entries());
+	const fitting = tables
+		.filter(([, seats]) => seats.length >= count)
+		.sort((a, b) => a[1].length - b[1].length || a[0] - b[0]);
+	if (fitting.length > 0) return fitting[0][1].slice(0, count).map((seat) => seat.id);
 
-	for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
-		const partySize = Number(key);
-		if (!Number.isInteger(partySize) || partySize < 1) continue;
-		if (!value || typeof value !== 'object') continue;
-		const { min, max } = value as Record<string, unknown>;
-		if (typeof min !== 'number' || typeof max !== 'number' || min < 1 || max < min) continue;
-		result[partySize] = { min, max };
-		found = true;
-	}
-
-	return found ? result : null;
+	const result: string[] = [];
+	tables
+		.sort((a, b) => b[1].length - a[1].length || a[0] - b[0])
+		.forEach(([, seats]) => seats.forEach((seat) => result.length < count && result.push(seat.id)));
+	return result;
 }

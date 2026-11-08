@@ -1,4 +1,4 @@
-import { Course, SeatsRangePerPartySize, UnitSeat } from './types';
+import { Course, UnitSeat } from './types';
 
 /** 接続する店舗。開発時は .env.development で dev_shop に切り替わる */
 export const SHOP_ID = import.meta.env.REACT_APP_SHOP_ID || 'default_shop';
@@ -28,13 +28,3 @@ export const UNIT_SEATS: UnitSeat[] = Array.from({ length: TABLE_COUNT }, (_, t)
 		seatIndex: s,
 	}))
 ).flat();
-
-/** 人数ごとに使う席数の初期ルール（1人→1～2席、2人→2～4席 …） */
-export const DEFAULT_SEATS_RANGE_PER_PARTY_SIZE: SeatsRangePerPartySize = {
-	1: { min: 1, max: 2 },
-	2: { min: 2, max: 4 },
-	3: { min: 3, max: 5 },
-	4: { min: 4, max: 6 },
-	5: { min: 5, max: 6 },
-	6: { min: 6, max: 6 },
-};

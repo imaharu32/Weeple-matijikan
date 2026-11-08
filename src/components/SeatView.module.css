@@ -1,0 +1,33 @@
+.legend {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	color: var(--color-text-muted);
+	font-size: var(--font-xs);
+	font-weight: 600;
+}
+
+.legendItem {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+	white-space: nowrap;
+}
+
+.swatch {
+	width: 14px;
+	height: 14px;
+	border-radius: 3px;
+	border: 2px solid;
+}
+
+.swatchEmpty {
+	background: var(--color-surface);
+	border-style: dashed;
+	border-color: var(--color-border-strong);
+}
+
+.swatchUsed {
+	background: linear-gradient(135deg, var(--group-1-bg) 50%, var(--group-3-bg) 50%);
+	border-color: var(--group-1-fg);
+}

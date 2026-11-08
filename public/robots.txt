@@ -1,3 +1,3 @@
-# https://www.robotstxt.org/robotstxt.html
+# スタッフ用の管理画面なので、検索エンジンには載せない
 User-agent: *
-Disallow:
+Disallow: /

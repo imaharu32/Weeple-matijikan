@@ -1,94 +1,47 @@
-import React, { useState } from 'react';
-import { UnitSeat, Inside, Course } from '../types';
+import React from 'react';
+import { Inside, UnitSeat } from '../types';
+import { GroupColor } from '../utils';
 import RoomDiagram from './RoomDiagram';
+import Panel from './ui/Panel';
+import styles from './SeatView.module.css';
 
 type Props = {
 	unitSeats: UnitSeat[];
 	inside: Inside[];
-	courses: Course[];
-	onCheckout: (id: string) => void;
-	onDelete: (id: string) => void;
-	onSelectInside: (id: string) => void;
+	groupColors: Map<string, GroupColor>;
+	onOpenInside: (insideId: string) => void;
 };
 
-export default function SeatView({ unitSeats, inside, courses, onCheckout, onDelete, onSelectInside }: Props) {
-	const [multiSelectMode, setMultiSelectMode] = useState(false);
-	const [selectedInsideIds, setSelectedInsideIds] = useState<Set<string>>(new Set());
-
-	const handleSeatClick = (_seatId: string, insideId?: string) => {
-		if (!insideId || !multiSelectMode) return;
-		const next = new Set(selectedInsideIds);
-		if (next.has(insideId)) next.delete(insideId);
-		else next.add(insideId);
-		setSelectedInsideIds(next);
-	};
+export default function SeatView({ unitSeats, inside, groupColors, onOpenInside }: Props) {
+	const usedSeats = inside.reduce((sum, entry) => sum + (entry.seats?.length ?? 0), 0);
+	const freeSeats = Math.max(0, unitSeats.length - usedSeats);
 
 	return (
-		<div className="seat-view">
-			<div className="seat-view-header">
-				<div>
-					<h2>座席管理</h2>
-					<div className="seat-view-subtitle">入口から見た教室配置</div>
+		<Panel
+			title="座席"
+			badge={`空き ${freeSeats}席`}
+			description="入口から見た配置です。色の付いた席や組の名前をクリックすると詳細を開きます。"
+			actions={
+				<div className={styles.legend} aria-label="凡例">
+					<span className={styles.legendItem}>
+						<span className={`${styles.swatch} ${styles.swatchEmpty}`} />
+						空席
+					</span>
+					<span className={styles.legendItem}>
+						<span className={`${styles.swatch} ${styles.swatchUsed}`} />
+						使用中（組ごとに色分け）
+					</span>
 				</div>
-				<button
-					className="toggle-button"
-					onClick={() => {
-						setMultiSelectMode(!multiSelectMode);
-						if (!multiSelectMode) setSelectedInsideIds(new Set());
-					}}
-				>
-					{multiSelectMode ? '単一選択に戻す' : '複数選択モード'}
-				</button>
-			</div>
-
+			}
+		>
 			<RoomDiagram
 				unitSeats={unitSeats}
 				inside={inside}
-				courses={courses}
+				groupColors={groupColors}
 				mode="view"
-				multiSelectMode={multiSelectMode}
-				selectedInsideIds={selectedInsideIds}
-				onSeatClick={handleSeatClick}
-				onInsideClick={onSelectInside}
-				onCheckout={onCheckout}
+				onSeatClick={(_seatId, insideId) => insideId && onOpenInside(insideId)}
+				onGroupClick={onOpenInside}
 			/>
-
-			{multiSelectMode && selectedInsideIds.size > 0 && (
-				<div className="seat-view-actions">
-					<div className="selected-info">{selectedInsideIds.size}団体選択中</div>
-					<div className="action-buttons">
-						<button
-							className="btn-action btn-checkout-multi"
-							onClick={() => {
-								Array.from(selectedInsideIds).forEach((id) => onCheckout(id));
-								setMultiSelectMode(false);
-								setSelectedInsideIds(new Set());
-							}}
-						>
-							選択団体を退店
-						</button>
-						<button
-							className="btn-action btn-delete-multi"
-							onClick={() => {
-								Array.from(selectedInsideIds).forEach((id) => onDelete(id));
-								setMultiSelectMode(false);
-								setSelectedInsideIds(new Set());
-							}}
-						>
-							選択団体を削除
-						</button>
-						<button
-							className="btn-action btn-cancel"
-							onClick={() => {
-								setMultiSelectMode(false);
-								setSelectedInsideIds(new Set());
-							}}
-						>
-							キャンセル
-						</button>
-					</div>
-				</div>
-			)}
-		</div>
+		</Panel>
 	);
 }

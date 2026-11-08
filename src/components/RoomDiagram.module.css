@@ -1,0 +1,308 @@
+/* 入口から見た店内。左にボードゲーム棚、テーブルは2列 × 3行、下が入口 */
+.room {
+	display: grid;
+	grid-template-columns: 32px minmax(0, 1fr);
+	grid-template-rows: minmax(0, 1fr) auto;
+	gap: var(--space-3);
+}
+
+.shelf {
+	grid-row: 1 / span 2;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	writing-mode: vertical-rl;
+	letter-spacing: 0.3em;
+	background: var(--color-surface-sunken);
+	border-radius: var(--radius-sm);
+	color: var(--color-text-muted);
+	font-size: var(--font-xs);
+	font-weight: 700;
+}
+
+.floor {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--space-2) var(--space-3);
+}
+
+.entrance {
+	justify-self: center;
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: 2px var(--space-4);
+	border: 1px dashed var(--color-border-strong);
+	border-radius: var(--radius-full);
+	color: var(--color-text-muted);
+	font-size: var(--font-sm);
+	font-weight: 700;
+}
+
+/* ===== テーブル ===== */
+
+.table {
+	padding: var(--space-2) var(--space-3);
+	background: var(--color-surface-muted);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+}
+
+.tableHeader {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	margin-bottom: 6px;
+}
+
+.tableName {
+	font-size: var(--font-sm);
+	font-weight: 800;
+}
+
+.tableFree {
+	color: var(--color-success);
+	font-size: var(--font-xs);
+	font-weight: 700;
+}
+
+.tableFull {
+	color: var(--color-text-subtle);
+}
+
+/* 席 | 天板 | 席 */
+.tableBody {
+	display: grid;
+	grid-template-columns: 44px minmax(0, 1fr) 44px;
+	gap: var(--space-2);
+}
+
+.seatColumn {
+	display: grid;
+	grid-template-rows: repeat(3, 38px);
+	gap: 6px;
+}
+
+.surface {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-1);
+	min-width: 0;
+	padding: var(--space-1);
+	overflow: hidden;
+	background: var(--color-table-top);
+	border-radius: var(--radius-sm);
+}
+
+/* ===== 席 ===== */
+
+.seat {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	border: 2px solid transparent;
+	border-radius: var(--radius-sm);
+	font-size: var(--font-md);
+	font-weight: 800;
+	line-height: 1;
+	transition:
+		background-color 120ms ease,
+		border-color 120ms ease,
+		opacity 120ms ease;
+}
+
+.seatPlaceholder {
+	visibility: hidden;
+}
+
+.seatNumber {
+	font-variant-numeric: tabular-nums;
+}
+
+.seatState {
+	margin-top: 2px;
+	font-size: 10px;
+	font-weight: 700;
+}
+
+/* 表示: 空席 */
+.empty {
+	background: var(--color-surface);
+	border-style: dashed;
+	border-color: var(--color-border-strong);
+	color: var(--color-text-subtle);
+}
+
+/* 表示: 使用中（組の色） */
+.occupied {
+	background: var(--group-bg);
+	border-color: var(--group-fg);
+	color: var(--group-fg);
+	cursor: pointer;
+}
+
+.occupied:hover:not(:disabled) {
+	box-shadow: 0 0 0 3px var(--group-bg);
+}
+
+.occupied:disabled {
+	cursor: default;
+}
+
+/* 選択: 選べる席 */
+.free {
+	background: var(--color-surface);
+	border-color: var(--color-border-strong);
+	color: var(--color-text-muted);
+	cursor: pointer;
+}
+
+.free:hover {
+	background: var(--color-primary-soft);
+	border-color: var(--color-primary);
+	color: var(--color-primary);
+}
+
+/* 選択: 選んだ席 */
+.chosen {
+	background: var(--color-primary);
+	border-color: var(--color-primary);
+	color: var(--color-text-on-primary);
+	cursor: pointer;
+}
+
+.chosen:hover {
+	background: var(--color-primary-hover);
+}
+
+/* 選択: ほかの組が使っている席 */
+.taken {
+	background: repeating-linear-gradient(
+		135deg,
+		var(--color-surface-sunken) 0 6px,
+		var(--color-seat-taken) 6px 12px
+	);
+	border-color: var(--color-border);
+	color: var(--color-text-subtle);
+	cursor: not-allowed;
+}
+
+/* 編集: この組の席（クリックで外す） / 空いている席（クリックで追加） */
+.removable,
+.addable {
+	cursor: pointer;
+}
+
+.hoverMark {
+	display: none;
+	font-size: 11px;
+	font-weight: 800;
+}
+
+.removable:hover .seatNumber,
+.addable:hover .seatNumber {
+	display: none;
+}
+
+.removable:hover .hoverMark,
+.addable:hover .hoverMark {
+	display: inline;
+}
+
+.removable:hover {
+	border-style: dashed;
+}
+
+.addable:hover {
+	background: var(--color-primary-soft);
+	border-style: solid;
+	border-color: var(--color-primary);
+	color: var(--color-primary);
+}
+
+.addable:hover .hoverMark {
+	font-size: var(--font-lg);
+}
+
+/* 一部の組だけを目立たせるとき、それ以外を薄くする */
+.dimmed {
+	opacity: 0.3;
+}
+
+/* ===== 天板の上の組の名前 ===== */
+
+.groupLabel {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	padding: 2px var(--space-2);
+	background: var(--group-bg);
+	border-left: 3px solid var(--group-fg);
+	border-radius: 4px;
+	font-size: var(--font-xs);
+	line-height: 1.5;
+}
+
+/* 名前を押すと詳細が開く */
+.groupButton {
+	width: 100%;
+	border: none;
+	border-left: 3px solid var(--group-fg);
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.groupButton:hover {
+	box-shadow: inset 0 0 0 1px var(--group-fg);
+}
+
+.groupButton:hover .groupName {
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.groupName {
+	overflow: hidden;
+	font-weight: 800;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.groupMeta {
+	overflow: hidden;
+	color: var(--color-text-muted);
+	font-size: 11px;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.groupTime {
+	font-weight: 700;
+}
+
+.groupTime.warning {
+	color: var(--color-warning);
+}
+
+.groupTime.danger {
+	color: var(--color-danger);
+}
+
+/* 画面の高さが低いとき（ノートPCなど）は席を少し低くして、図全体が収まるようにする */
+@media (max-height: 860px) {
+	.seatColumn {
+		grid-template-rows: repeat(3, 30px);
+		gap: 4px;
+	}
+
+	.tableHeader {
+		margin-bottom: var(--space-1);
+	}
+
+	.groupLabel {
+		line-height: 1.35;
+	}
+}
