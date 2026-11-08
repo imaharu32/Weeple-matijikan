@@ -164,11 +164,7 @@ export default function InsideDetailModal({ inside, courses, unitSeats, onClose,
 						</div>
 					</div>
 
-					<div className="inside-detail-summary">
-						<div>現在の残り: {remainingMinutes}分</div>
-						<div>保存後の見込み: {previewRemainingMinutes}分</div>
-						<div>席: {seatLabels.length > 0 ? seatLabels.join(' / ') : '未設定'}</div>
-					</div>
+					{/* 概要表示（残り時間・保存後見込み・席表示）は非表示に変更 */}
 
 					{seatsCount !== inside.seats.length && (
 						<div style={{ background: '#fff3cd', padding: '8px', borderRadius: '4px', color: '#856404', fontSize: '13px', marginBottom: '8px' }}>

@@ -314,8 +314,13 @@ function App() {
 			<button className="secondary settings-button" onClick={() => setShowSettingsModal(true)}>
 				⚙ 設定
 			</button>
-			<button className="add-button" onClick={() => setShowAddModal(true)}>
-				新しく並ぶ
+			<button
+				className="add-button"
+				onClick={() => setShowAddModal(true)}
+				title="新たに並ぶ"
+				aria-label="新たに並ぶ"
+			>
+				+
 			</button>
 			<div className="header-preview-estimate">
 				{previewSize === '' ? '入店見込み：—' : `入店見込み 約${estimateForNewPartyPreview(Number(previewSize))}分`}
