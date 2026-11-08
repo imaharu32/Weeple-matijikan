@@ -1,6 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Course, Inside, UnitSeat } from '../types';
 import { getTableSeatsInfo } from '../utils';
+import styles from './RoomDiagram.module.css';
 
 type SeatMode = 'view' | 'select';
 
@@ -27,14 +28,17 @@ const TABLE_POSITIONS = [
 	{ row: 3, col: 2 },
 ];
 
-const SEAT_POSITIONS = [
-	'r1c1',
-	'r1c2',
-	'r2c1',
-	'r2c2',
-	'r3c1',
-	'r3c2',
+// テーブル内の席の位置（seatIndex 0〜5 → 2列 × 3行）
+const SEAT_POSITION_CLASSES = [
+	styles.roomSeatR1c1,
+	styles.roomSeatR1c2,
+	styles.roomSeatR2c1,
+	styles.roomSeatR2c2,
+	styles.roomSeatR3c1,
+	styles.roomSeatR3c2,
 ];
+
+const cx = (...names: Array<string | false | undefined>) => names.filter(Boolean).join(' ');
 
 export default function RoomDiagram({
 	unitSeats,
@@ -66,24 +70,24 @@ export default function RoomDiagram({
 	const [tooltipSeatId, setTooltipSeatId] = useState<string | null>(null);
 
 	return (
-		<div className={`room-diagram room-diagram--${mode}`}>
-			<div className="room-sidebar">
-				<div className="room-sidebar-label">ボードゲーム</div>
+		<div className={cx(styles.roomDiagram, mode === 'select' && styles.roomDiagramSelect)}>
+			<div className={styles.roomSidebar}>
+				<div className={styles.roomSidebarLabel}>ボードゲーム</div>
 			</div>
 
-			<div className="room-legend">
-				<div className="legend-item"><span className="legend-dot empty"/> 空席</div>
-				<div className="legend-item"><span className="legend-dot occupied"/> 使用中</div>
+			<div className={styles.roomLegend}>
+				<div className={styles.legendItem}><span className={cx(styles.legendDot, styles.empty)}/> 空席</div>
+				<div className={styles.legendItem}><span className={cx(styles.legendDot, styles.occupied)}/> 使用中</div>
 			</div>
 
-			<div className="room-floor">
-				{TABLE_POSITIONS.map((pos, index) => {
+			<div className={styles.roomFloor}>
+				{TABLE_POSITIONS.map((_, index) => {
 					const tableNum = index + 1;
 					const tableSeats = getTableSeatsInfo(tableNum, unitSeats, inside);
 
 					return (
-						<div key={`table-${tableNum}`} className={`room-table room-table--row-${pos.row} room-table--col-${pos.col}`}>
-							<div className="room-table-label">テーブル {tableNum}</div>
+						<div key={`table-${tableNum}`} className={styles.roomTable}>
+							<div className={styles.roomTableLabel}>テーブル {tableNum}</div>
 							{tableSeats.map((seatInfo, seatIndex) => {
 								const isOccupied = !!seatInfo.occupiedByInsideId;
 								const seatId = seatInfo.id;
@@ -92,14 +96,17 @@ export default function RoomDiagram({
 								const isSeatSelected = mode === 'select' ? selectedSeatIds?.has(seatId) : false;
 								const isGroupSelected = mode === 'view' && isOccupied && !!insideId && selectedInsideIds?.has(insideId);
 								const isFocusedInside = mode === 'view' && isOccupied && !!insideId && focusInsideId === insideId;
-								const positionClass = `room-seat--${SEAT_POSITIONS[seatIndex]}`;
+								const positionClass = SEAT_POSITION_CLASSES[seatIndex];
 
 								return (
 									<div
 										key={seatId}
-										className={`room-seat ${positionClass} ${isOccupied ? 'occupied' : 'empty'} ${
-											isSeatSelected || isGroupSelected ? 'selected' : ''
-										} ${isFocusedInside ? 'focused' : ''}`}
+										className={cx(
+											styles.roomSeat,
+											positionClass,
+											isOccupied ? styles.occupied : styles.empty,
+											(isSeatSelected || isGroupSelected) && styles.selected
+										)}
 										tabIndex={mode === 'select' && isOccupied ? -1 : 0}
 										onClick={() => {
 											if (!onSeatClick) return;
@@ -128,37 +135,37 @@ export default function RoomDiagram({
 											}
 										}}
 									>
-										<div className="status-dot-wrapper">
-											<div className={`status-dot ${isOccupied ? 'occupied' : 'empty'}`} />
+										<div className={styles.statusDotWrapper}>
+											<div className={cx(styles.statusDot, isOccupied ? styles.occupied : styles.empty)} />
 										</div>
 										{mode === 'select' ? (
-											<div className="room-seat-select-content">
-												<div className="room-seat-number">{seatInfo.seatIndex + 1}</div>
-												<div className="room-seat-status">
+											<div className={styles.roomSeatSelectContent}>
+												<div className={styles.roomSeatNumber}>{seatInfo.seatIndex + 1}</div>
+												<div className={styles.roomSeatStatus}>
 													{isOccupied ? '使用中' : isSeatSelected ? '選択中' : '空席'}
 												</div>
 											</div>
 										) : isOccupied ? (
-											<div className="room-seat-view-content">
-												<div className="room-seat-info">
-													<div className="room-seat-line1">
-														<span className="room-seat-name">席 {seatInfo.seatIndex + 1}</span>
-														<span className="room-seat-count">{seatInfo.occupantSize}名</span>
+											<div className={styles.roomSeatViewContent}>
+												<div className={styles.roomSeatInfo}>
+													<div className={styles.roomSeatLine1}>
+														<span className={styles.roomSeatName}>席 {seatInfo.seatIndex + 1}</span>
+														<span className={styles.roomSeatCount}>{seatInfo.occupantSize}名</span>
 													</div>
-													<div className="room-seat-line2">
-														<span className="room-seat-course">{course?.name ?? '?'}</span>
-														<span className="room-seat-remaining">残り {seatInfo.remainingMinutes}分</span>
+													<div className={styles.roomSeatLine2}>
+														<span className={styles.roomSeatCourse}>{course?.name ?? '?'}</span>
+														<span className={styles.roomSeatRemaining}>残り {seatInfo.remainingMinutes}分</span>
 													</div>
-													<div className={`seat-tooltip ${tooltipSeatId === seatId ? 'open' : ''}`}>
-														<div className="tooltip-name">{insideMap.get(insideId ?? '')?.id ?? '不明'}</div>
-														<div className="tooltip-course">{course?.name ?? '?'}</div>
-														<div className="tooltip-remaining">残り {seatInfo.remainingMinutes}分</div>
+													<div className={cx(styles.seatTooltip, tooltipSeatId === seatId && styles.open)}>
+														<div className={styles.tooltipName}>{insideMap.get(insideId ?? '')?.id ?? '不明'}</div>
+														<div>{course?.name ?? '?'}</div>
+														<div>残り {seatInfo.remainingMinutes}分</div>
 													</div>
 												</div>
-												<div className="room-seat-actions">
+												<div className={styles.roomSeatActions}>
 													{mode === 'view' && isOccupied && insideId && onInsideClick && (
 														<button
-															className="btn-seat-details"
+															className={styles.btnSeatDetails}
 															onClick={(e) => {
 																e.stopPropagation();
 																onInsideClick(insideId);
@@ -169,7 +176,7 @@ export default function RoomDiagram({
 													)}
 													{!multiSelectMode && onCheckout && insideId && (
 														<button
-															className="btn-seat-checkout"
+															className={styles.btnSeatCheckout}
 															onClick={(e) => {
 																e.stopPropagation();
 																onCheckout(insideId);
@@ -179,14 +186,14 @@ export default function RoomDiagram({
 														</button>
 													)}
 													{multiSelectMode && insideId && isGroupSelected && (
-														<div className="seat-select-checkbox">✓</div>
+														<div className={styles.seatSelectCheckbox}>✓</div>
 													)}
 												</div>
 											</div>
 										) : (
-											<div className="room-seat-empty-content">
-												<div className="room-seat-number">席 {seatInfo.seatIndex + 1}</div>
-												<div className="room-seat-status">空席</div>
+											<div className={styles.roomSeatEmptyContent}>
+												<div className={styles.roomSeatNumber}>席 {seatInfo.seatIndex + 1}</div>
+												<div className={styles.roomSeatStatus}>空席</div>
 											</div>
 										)}
 										</div>
@@ -196,14 +203,14 @@ export default function RoomDiagram({
 				})}
 			</div>
 
-			<div className="room-entrance">
-				<div className="room-entrance-icon" aria-hidden>
+			<div className={styles.roomEntrance}>
+				<div className={styles.roomEntranceIcon} aria-hidden>
 					<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
 						<path d="M5 12h14" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 						<path d="M13 6l6 6-6 6" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
 					</svg>
 				</div>
-				<div className="room-entrance-label">入口</div>
+				<div className={styles.roomEntranceLabel}>入口</div>
 			</div>
 		</div>
 	);

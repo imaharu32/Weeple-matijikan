@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Party, Course, UnitSeat, SeatDetail, Inside } from '../types';
 import { getSeatsRangeForPartySize } from '../utils/seatUtils';
 import RoomDiagram from './RoomDiagram';
+import styles from './SeatSelectionModal.module.css';
 
 type Props = {
     party: Party;
@@ -44,33 +45,33 @@ export default function SeatSelectionModal({ party, courses, unitSeats, inside, 
 
     return (
         <div className="modal-overlay" onClick={onCancel}>
-            <div className="modal-content seat-selection-modal" onClick={(e) => e.stopPropagation()}>
+            <div className={`modal-content ${styles.seatSelectionModal}`} onClick={(e) => e.stopPropagation()}>
                 <h3>座席を選択 ({selectedSeats.size}/{targetSeatsCount}席) 【{party.size}人客】</h3>
 
-                <div className="seat-modal-section">
+                <div className={styles.seatModalSection}>
                     <label>コースを選択：</label>
-                    <div className="course-options" style={{ marginTop: 8 }}>
+                    <div className={styles.courseOptions}>
                         {courses.map((course) => (
                             <button
                                 key={course.id}
                                 type="button"
-                                className={"course-option" + (selectedCourseId === course.id ? ' selected' : '')}
+                                className={`${styles.courseOption} ${selectedCourseId === course.id ? styles.selected : ''}`}
                                 onClick={() => setSelectedCourseId(course.id)}
                             >
-                                <div className="course-minutes">{course.minutes}分</div>
-                                <div className="course-name">{course.name}</div>
+                                <div className={styles.courseMinutes}>{course.minutes}分</div>
+                                <div className={styles.courseName}>{course.name}</div>
                             </button>
                         ))}
                     </div>
                 </div>
 
-                <div className="seat-modal-section">
+                <div className={styles.seatModalSection}>
                     <label>占有する座席数を選択：</label>
-                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginTop: 8 }}>
-                        <span style={{ minWidth: 80 }}>
+                    <div className={styles.seatsCountRow}>
+                        <span className={styles.seatsRange}>
                             {seatsRange.min}～{seatsRange.max}席
                         </span>
-                        <div style={{ display: 'flex', gap: 6 }}>
+                        <div className={styles.seatsStepper}>
                             <button
                                 type="button"
                                 className="secondary"
@@ -90,7 +91,7 @@ export default function SeatSelectionModal({ party, courses, unitSeats, inside, 
                                         setTargetSeatsCount(Math.max(seatsRange.min, Math.min(seatsRange.max, val)));
                                     }
                                 }}
-                                style={{ width: 60, padding: 6, borderRadius: 4, border: '1px solid #ccc', textAlign: 'center' }}
+                                className={styles.seatsInput}
                             />
                             <button
                                 type="button"
@@ -101,11 +102,11 @@ export default function SeatSelectionModal({ party, courses, unitSeats, inside, 
                                 ＋
                             </button>
                         </div>
-                        <span style={{ fontWeight: 600 }}>席</span>
+                        <span className={styles.seatsUnit}>席</span>
                     </div>
                 </div>
 
-                <div className="seat-modal-section full-seat-grid">
+                <div className={styles.seatModalSection}>
                     <label>入口から見た教室図（空席を選択）</label>
                     <RoomDiagram
                         unitSeats={unitSeats}
@@ -117,7 +118,7 @@ export default function SeatSelectionModal({ party, courses, unitSeats, inside, 
                     />
                 </div>
 
-                <div className="modal-actions">
+                <div className={styles.modalActions}>
                     <button className="btn-cancel" onClick={onCancel}>
                         キャンセル
                     </button>

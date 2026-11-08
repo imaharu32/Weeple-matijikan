@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import './App.css';
+import styles from './App.module.css';
 import { Party, SeatDetail } from './types';
 import { COURSES, MAX_CAPACITY, SHOP_ID, UNIT_SEATS } from './constants';
 import AddForm from './components/AddForm';
@@ -73,36 +73,36 @@ function App() {
 	}
 
 	return (
-		<div className="App" style={{ padding: 16 }}>
+		<div className={styles.app}>
 			{errorMessage && (
-				<div className="error-message">
+				<div className={styles.errorMessage}>
 					{errorMessage}
-					<button className="error-message-close" onClick={() => setErrorMessage(null)}>
+					<button className={styles.errorMessageClose} onClick={() => setErrorMessage(null)}>
 						閉じる
 					</button>
 				</div>
 			)}
 
-			<header className="app-header">
+			<header className={styles.appHeader}>
 				<h1>待ち時間管理　ボドゲカフェWeeple</h1>
-				<button className="secondary history-button" onClick={() => setShowHistoryModal(true)}>
+				<button className={`secondary ${styles.historyButton}`} onClick={() => setShowHistoryModal(true)}>
 					履歴
 			</button>
-			<button className="secondary settings-button" onClick={() => setShowSettingsModal(true)}>
+			<button className={`secondary ${styles.settingsButton}`} onClick={() => setShowSettingsModal(true)}>
 				⚙ 設定
 			</button>
 			<button
-				className="add-button"
+				className={styles.addButton}
 				onClick={() => setShowAddModal(true)}
 				title="新たに並ぶ"
 				aria-label="新たに並ぶ"
 			>
 				+
 			</button>
-			<div className="header-preview-estimate">
+			<div className={styles.headerPreviewEstimate}>
 				{previewSize === '' ? '入店見込み：—' : `入店見込み 約${estimateForNewPartyPreview(Number(previewSize))}分`}
 				</div>
-				<div className="header-preview-count">
+				<div className={styles.headerPreviewCount}>
 					<input
 						type="number"
 						min={1}
@@ -111,15 +111,15 @@ function App() {
 							const value = e.target.value;
 							setPreviewSize(value === '' ? '' : Math.max(1, Number(value)));
 						}}
-						className="header-count-input"
+						className={styles.headerCountInput}
 						placeholder="人数を入力"
 					/>
-					<span className="header-count-label">人数</span>
+					<span className={styles.headerCountLabel}>人数</span>
 				</div>
 			</header>
 
-			<section style={{ marginBottom: 12 }}>
-				<label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+			<section className={styles.capacitySection}>
+				<label className={styles.capacityLabel}>
 					<span>店舗収容人数：</span>
 					<input
 						type="number"
@@ -127,13 +127,13 @@ function App() {
 						min={1}
 						readOnly
 						disabled
-						style={{ width: 100, padding: 6, borderRadius: 6, border: '1px solid #ddd', background: '#f7f7f7' }}
+						className={styles.capacityInput}
 					/>
 				</label>
 			</section>
 
-			<div className="main-columns">
-				<div className="column left-column">
+			<div className={styles.mainColumns}>
+				<div className={`${styles.column} ${styles.leftColumn}`}>
 					<QueueList
 						queue={queue}
 						courses={COURSES}
@@ -147,7 +147,7 @@ function App() {
 					/>
 				</div>
 
-				<div className="column right-column">
+				<div className={`${styles.column} ${styles.rightColumn}`}>
 					<InsideList
 						inside={inside}
 						courses={COURSES}
@@ -162,7 +162,7 @@ function App() {
 				</div>
 			</div>
 
-			<section style={{ marginTop: 20, marginBottom: 12 }}>
+			<section className={styles.seatSection}>
 				<SeatView
 					unitSeats={UNIT_SEATS}
 					inside={inside}
@@ -202,7 +202,7 @@ function App() {
 
 			{showAddModal && (
 				<div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-					<div className="modal-content add-form-modal" onClick={(e) => e.stopPropagation()}>
+					<div className={`modal-content ${styles.addFormModal}`} onClick={(e) => e.stopPropagation()}>
 						<h3>新しく並ぶ</h3>
 						<AddForm
 							onAdd={addParty}
@@ -228,14 +228,14 @@ function App() {
 
 			{showSettingsModal && (
 				<div className="modal-overlay" onClick={() => setShowSettingsModal(false)}>
-					<div className="modal-content settings-modal" onClick={(e) => e.stopPropagation()}>
-						<div className="modal-header">
+					<div className="modal-content" onClick={(e) => e.stopPropagation()}>
+						<div>
 							<h3>設定</h3>
 							<button className="secondary" onClick={() => setShowSettingsModal(false)}>
 								閉じる
 							</button>
 						</div>
-						<div className="modal-body">
+						<div>
 							<SeatsPerPartySizeSettings
 								seatsRangePerPartySize={seatsRangePerPartySize}
 								onSave={async (newSettings) => {

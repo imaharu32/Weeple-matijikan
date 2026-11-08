@@ -1,0 +1,118 @@
+.insideDetailModal {
+	width: min(96vw, 1280px);
+	max-width: 1280px;
+	max-height: 92vh;
+	overflow-y: auto;
+}
+
+.insideDetailHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: flex-start;
+	gap: 16px;
+	margin-bottom: 20px;
+}
+
+.insideDetailHeader h3 {
+	margin: 0;
+	font-size: 24px;
+	font-weight: 700;
+}
+
+.insideDetailSubtitle {
+	margin-top: 8px;
+	font-size: 13px;
+	color: var(--text-muted);
+}
+
+.insideDetailGrid {
+	display: grid;
+	grid-template-columns: 360px 1fr;
+	gap: 20px;
+}
+
+.insideDetailPanel {
+	background: #fff;
+	border: 2px solid var(--border);
+	border-radius: 12px;
+	padding: 16px;
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+.insideDetailPanelDiagram {
+	min-width: 0;
+}
+
+.insideDetailField {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	font-weight: 600;
+	color: var(--text-dark);
+}
+
+.insideDetailField span, .insideDetailFieldLabel {
+	font-size: 14px;
+	font-weight: 700;
+	color: var(--text-dark);
+}
+
+.insideDetailField input,
+.insideDetailField select,
+.insideDetailField textarea {
+	width: 100%;
+}
+
+.insideDetailExtensionRow {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.insideDetailExtensionRow input {
+	max-width: 110px;
+}
+
+.insideDetailActions {
+	display: flex;
+	gap: 10px;
+	flex-wrap: wrap;
+}
+
+.insideDetailActions button {
+	flex: 1;
+	min-width: 96px;
+}
+
+@media (max-width: 900px) {
+	.insideDetailGrid {
+		grid-template-columns: 1fr;
+	}
+
+	.insideDetailModal {
+		width: min(98vw, 1280px);
+	}
+}
+
+/* 占有席数を変えたときの注意書き */
+.seatsChangedWarning {
+	background: #fff3cd;
+	padding: 8px;
+	border-radius: 4px;
+	color: #856404;
+	font-size: 13px;
+	margin-bottom: 8px;
+}
+
+.selectHint {
+	margin-bottom: 12px;
+	font-size: 13px;
+	color: #666;
+}
+
+.resetActions {
+	margin-top: 12px;
+}

@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Course, Inside, UnitSeat } from '../types';
 import RoomDiagram from './RoomDiagram';
+import styles from './InsideDetailModal.module.css';
 
 type Props = {
 	inside: Inside;
@@ -70,11 +71,11 @@ export default function InsideDetailModal({ inside, courses, unitSeats, onClose,
 
 	return (
 		<div className="modal-overlay" onClick={onClose}>
-			<div className="modal-content inside-detail-modal" onClick={(e) => e.stopPropagation()}>
-				<div className="inside-detail-header">
+			<div className={`modal-content ${styles.insideDetailModal}`} onClick={(e) => e.stopPropagation()}>
+				<div className={styles.insideDetailHeader}>
 					<div>
 						<h3>{inside.note ? inside.note : '店内客の詳細'}</h3>
-						<div className="inside-detail-subtitle">
+						<div className={styles.insideDetailSubtitle}>
 							入店: {new Date(inside.enterAt).toLocaleString()} / 退店見込み: {previewRemainingMinutes}分
 						</div>
 					</div>
@@ -83,9 +84,9 @@ export default function InsideDetailModal({ inside, courses, unitSeats, onClose,
 					</button>
 				</div>
 
-				<div className="inside-detail-grid">
-					<div className="inside-detail-panel">
-						<label className="inside-detail-field">
+				<div className={styles.insideDetailGrid}>
+					<div className={styles.insideDetailPanel}>
+						<label className={styles.insideDetailField}>
 							<span>人数</span>
 							<input
 								type="number"
@@ -95,7 +96,7 @@ export default function InsideDetailModal({ inside, courses, unitSeats, onClose,
 							/>
 						</label>
 
-						<label className="inside-detail-field">
+						<label className={styles.insideDetailField}>
 							<span>コース</span>
 							<select value={courseId} onChange={(e) => setCourseId(e.target.value)}>
 								{courses.map((course) => (
@@ -106,7 +107,7 @@ export default function InsideDetailModal({ inside, courses, unitSeats, onClose,
 							</select>
 						</label>
 
-						<div className="inside-detail-field">
+						<div className={styles.insideDetailField}>
 							<span>メモ</span>
 							<textarea
 								value={note}
@@ -116,9 +117,9 @@ export default function InsideDetailModal({ inside, courses, unitSeats, onClose,
 							/>
 						</div>
 
-						<div className="inside-detail-field">
+						<div className={styles.insideDetailField}>
 							<span>延長</span>
-							<div className="inside-detail-extension-row">
+							<div className={styles.insideDetailExtensionRow}>
 								<button type="button" className="secondary" onClick={() => setExtraMinutes((current) => current + 15)}>
 									+15分
 								</button>
@@ -135,9 +136,9 @@ export default function InsideDetailModal({ inside, courses, unitSeats, onClose,
 							</div>
 						</div>
 
-					<div className="inside-detail-field">
+					<div className={styles.insideDetailField}>
 						<span>占有席数</span>
-						<div className="inside-detail-extension-row">
+						<div className={styles.insideDetailExtensionRow}>
 							<button
 								type="button"
 								className="secondary"
@@ -167,12 +168,12 @@ export default function InsideDetailModal({ inside, courses, unitSeats, onClose,
 					{/* 概要表示（残り時間・保存後見込み・席表示）は非表示に変更 */}
 
 					{seatsCount !== inside.seats.length && (
-						<div style={{ background: '#fff3cd', padding: '8px', borderRadius: '4px', color: '#856404', fontSize: '13px', marginBottom: '8px' }}>
+						<div className={styles.seatsChangedWarning}>
 							占有席数が変更されています。下の「座席選択」ボタンで新しい座席を選んでください。
 						</div>
 					)}
 
-					<div className="inside-detail-actions">
+					<div className={styles.insideDetailActions}>
 						<button
 							className="secondary"
 							onClick={() => setIsEditingSeats((current) => !current)}
@@ -191,8 +192,8 @@ export default function InsideDetailModal({ inside, courses, unitSeats, onClose,
 					</div>
 				</div>
 
-					<div className="inside-detail-panel inside-detail-panel--diagram">
-						<div className="inside-detail-field inside-detail-field--label">いる席（図）</div>
+					<div className={`${styles.insideDetailPanel} ${styles.insideDetailPanelDiagram}`}>
+						<div className={`${styles.insideDetailField} ${styles.insideDetailFieldLabel}`}>いる席（図）</div>
 					{!isEditingSeats && (
 						<RoomDiagram
 							unitSeats={unitSeats}
@@ -205,7 +206,7 @@ export default function InsideDetailModal({ inside, courses, unitSeats, onClose,
 
 					{isEditingSeats && (
 						<div>
-							<div style={{ marginBottom: '12px', fontSize: '13px', color: '#666' }}>
+							<div className={styles.selectHint}>
 								{seatsCount}席分の空き席を選んでください。（現在：{selectedSeatIds.size}席選択中）
 							</div>
 							<RoomDiagram
@@ -228,7 +229,7 @@ export default function InsideDetailModal({ inside, courses, unitSeats, onClose,
 									});
 								}}
 							/>
-							<div className="inside-detail-actions" style={{ marginTop: '12px' }}>
+							<div className={`${styles.insideDetailActions} ${styles.resetActions}`}>
 								<button
 									className="secondary"
 									onClick={() => {

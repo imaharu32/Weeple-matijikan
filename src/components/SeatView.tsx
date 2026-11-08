@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UnitSeat, Inside, Course } from '../types';
 import RoomDiagram from './RoomDiagram';
+import styles from './SeatView.module.css';
 
 type Props = {
 	unitSeats: UnitSeat[];
@@ -24,11 +25,11 @@ export default function SeatView({ unitSeats, inside, courses, onCheckout, onDel
 	};
 
 	return (
-		<div className="seat-view">
-			<div className="seat-view-header">
+		<div className={styles.seatView}>
+			<div className={styles.seatViewHeader}>
 				<div>
 					<h2>座席管理</h2>
-					<div className="seat-view-subtitle">入口から見た教室配置</div>
+					<div className={styles.seatViewSubtitle}>入口から見た教室配置</div>
 				</div>
 				<button
 					className="toggle-button"
@@ -54,7 +55,7 @@ export default function SeatView({ unitSeats, inside, courses, onCheckout, onDel
 			/>
 
 			{multiSelectMode && selectedInsideIds.size > 0 && (
-				<div className="seat-view-actions">
+				<div className={styles.seatViewActions}>
 					<div className="selected-info">{selectedInsideIds.size}団体選択中</div>
 					<div className="action-buttons">
 						<button

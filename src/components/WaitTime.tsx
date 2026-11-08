@@ -1,4 +1,5 @@
 import React from 'react';
+import styles from './WaitTime.module.css';
 
 type Props = {
 	minutes: number;
@@ -6,11 +7,11 @@ type Props = {
 
 export default function WaitTime({ minutes }: Props) {
 	return (
-		<div className="wait-time-page">
-			<div className="wait-time-card">
-				<div className="wait-time-label">現在の待ち時間</div>
-				<div className="wait-time-value">{minutes}分</div>
-				<div className="wait-time-note">（2名で並んだ場合の目安）</div>
+		<div className={styles.waitTimePage}>
+			<div className={styles.waitTimeCard}>
+				<div className={styles.waitTimeLabel}>現在の待ち時間</div>
+				<div className={styles.waitTimeValue}>{minutes}分</div>
+				<div className={styles.waitTimeNote}>（2名で並んだ場合の目安）</div>
 			</div>
 		</div>
 	);

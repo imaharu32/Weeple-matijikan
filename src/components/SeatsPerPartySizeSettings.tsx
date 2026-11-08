@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import styles from './SeatsPerPartySizeSettings.module.css';
 
 type Props = {
 	seatsRangePerPartySize: Record<number, { min: number; max: number }>;
@@ -47,48 +48,48 @@ export default function SeatsPerPartySizeSettings({ seatsRangePerPartySize, onSa
 	};
 
 	return (
-		<div className="settings-panel">
+		<div>
 			<h3>人数別座席占有範囲設定</h3>
-			<p style={{ color: '#666', fontSize: 13, marginBottom: 16 }}>
+			<p className={styles.description}>
 				各グループサイズに対して、占有座席数の最小値と最大値を設定してください。
 				（例：2人客は2～4席の範囲で選択可、など）
 			</p>
 
-			<div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: 12, marginBottom: 16 }}>
+			<div className={styles.grid}>
 				{[1, 2, 3, 4, 5, 6].map((partySize) => {
 					const range = settings[partySize] || { min: partySize, max: partySize };
 					return (
-						<div key={partySize} style={{ padding: 12, border: '1px solid #ddd', borderRadius: 6 }}>
-							<label style={{ display: 'block', marginBottom: 12 }}>
-								<span style={{ fontWeight: 600 }}>{partySize}人客</span>
+						<div key={partySize} className={styles.rule}>
+							<label className={styles.ruleTitle}>
+								<span className={styles.ruleTitleText}>{partySize}人客</span>
 							</label>
-							<div style={{ marginBottom: 8 }}>
-								<label style={{ display: 'flex', gap: 8, alignItems: 'center', marginBottom: 6 }}>
-									<span style={{ fontSize: 12, minWidth: 30 }}>最小:</span>
+							<div className={styles.fields}>
+								<label className={styles.field}>
+									<span className={styles.fieldLabel}>最小:</span>
 									<input
 										type="number"
 										min={1}
 										max={6}
 										value={range.min}
 										onChange={(e) => handleMinChange(partySize, Number(e.target.value) || 1)}
-										style={{ flex: 1, padding: 4, borderRadius: 4, border: '1px solid #ccc' }}
+										className={styles.input}
 									/>
-									<span style={{ fontSize: 12, minWidth: 16 }}>席</span>
+									<span className={styles.fieldUnit}>席</span>
 								</label>
-								<label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-									<span style={{ fontSize: 12, minWidth: 30 }}>最大:</span>
+								<label className={styles.field}>
+									<span className={styles.fieldLabel}>最大:</span>
 									<input
 										type="number"
 										min={1}
 										max={6}
 										value={range.max}
 										onChange={(e) => handleMaxChange(partySize, Number(e.target.value) || 6)}
-										style={{ flex: 1, padding: 4, borderRadius: 4, border: '1px solid #ccc' }}
+										className={styles.input}
 									/>
-									<span style={{ fontSize: 12, minWidth: 16 }}>席</span>
+									<span className={styles.fieldUnit}>席</span>
 								</label>
 							</div>
-							<div style={{ fontSize: 12, color: '#999', padding: 6, background: '#f5f5f5', borderRadius: 4 }}>
+							<div className={styles.summary}>
 								{range.min}～{range.max}席で選択可
 							</div>
 						</div>
@@ -97,12 +98,12 @@ export default function SeatsPerPartySizeSettings({ seatsRangePerPartySize, onSa
 			</div>
 
 			{isSaved && (
-				<div style={{ padding: 8, background: '#e8f5e9', color: '#2e7d32', borderRadius: 4, marginBottom: 12 }}>
+				<div className={styles.saved}>
 					✓ 設定を保存しました
 				</div>
 			)}
 
-			<div style={{ display: 'flex', gap: 8 }}>
+			<div className={styles.actions}>
 				<button className="secondary" onClick={handleReset}>
 					戻す
 				</button>

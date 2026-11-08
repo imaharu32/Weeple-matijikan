@@ -1,4 +1,5 @@
 import React, { useMemo, useState, useRef, useEffect } from 'react';
+import styles from './AddForm.module.css';
 
 type Props = {
 	onAdd: (size: number, note?: string) => void;
@@ -39,14 +40,14 @@ export default function AddForm({ onAdd, getEstimate, onAfterAdd, onCancel }: Pr
 				setSize(2);
 				if (onAfterAdd) onAfterAdd();
 			}}
-			className="add-form"
+			className={styles.addForm}
 		>
-			<div className="add-form-size-section">
-				<label className="add-form-label">人数</label>
-				<div className="add-form-size-control">
+			<div className={styles.addFormSizeSection}>
+				<label className={styles.addFormLabel}>人数</label>
+				<div className={styles.addFormSizeControl}>
 					<button
 						type="button"
-						className="size-btn-minus"
+						className={styles.sizeBtnMinus}
 						onClick={() => {
 							setSize(Math.max(1, size - 1));
 							setTimeout(() => noteRef.current?.focus(), 0);
@@ -60,11 +61,11 @@ export default function AddForm({ onAdd, getEstimate, onAfterAdd, onCancel }: Pr
 						value={size}
 						min={1}
 						onChange={(e) => setSize(Number(e.target.value))}
-						className="size-input-large"
+						className={styles.sizeInputLarge}
 					/>
 					<button
 						type="button"
-						className="size-btn-plus"
+						className={styles.sizeBtnPlus}
 						onClick={() => {
 							setSize(size + 1);
 							setTimeout(() => noteRef.current?.focus(), 0);
@@ -75,29 +76,29 @@ export default function AddForm({ onAdd, getEstimate, onAfterAdd, onCancel }: Pr
 				</div>
 			</div>
 
-			<label className="add-form-row">
-				<span className="add-form-label">メモ：</span>
+			<label className={styles.addFormRow}>
+				<span className={styles.addFormLabel}>メモ：</span>
 				<textarea
 					value={note}
 					onChange={(e) => setNote(e.target.value)}
 					placeholder="例: 小学生、家族、カップル、大学生など"
-					className="note-input"
+					className={styles.noteInput}
 					ref={noteRef}
 					rows={2}
 				/>
 			</label>
 
 			{estimateMin !== null && (
-				<div className="add-form-estimate">
+				<div className={styles.addFormEstimate}>
 					並んだ場合の入店見込み： <strong>約{estimateMin}分</strong>
 				</div>
 			)}
 
-			<div className="add-form-actions">
+			<div className={styles.addFormActions}>
 				<button type="button" className="secondary" onClick={onCancel}>
 					キャンセル
 				</button>
-				<button type="submit" className="primary" style={{ fontSize: 16, padding: '12px 20px' }}>
+				<button type="submit" className={`primary ${styles.submitButton}`}>
 					列に追加
 				</button>
 			</div>

@@ -1,0 +1,127 @@
+.courseOptions {
+	display: flex;
+	gap: 10px;
+	align-items: stretch;
+	margin-top: 8px;
+	flex-wrap: wrap;
+}
+
+.courseOption {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 12px 16px;
+	min-width: 120px;
+	border-radius: 10px;
+	border: 2px solid var(--border);
+	background: white;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.courseOption .courseMinutes {
+	font-size: 22px;
+	font-weight: 900;
+	color: var(--primary);
+}
+
+.courseOption .courseName {
+	font-size: 13px;
+	color: var(--text-muted);
+	margin-top: 6px;
+	font-weight: 600;
+}
+
+.courseOption.selected {
+	border-color: var(--primary);
+	background: linear-gradient(135deg, #f7fbf7 0%, #ffffff 100%);
+	box-shadow: 0 6px 16px rgba(91, 124, 92, 0.12);
+}
+
+.seatSelectionModal {
+	width: min(96vw, 1320px);
+	max-width: 1320px;
+	max-height: 92vh;
+	min-height: 84vh;
+	overflow-y: auto;
+}
+
+@media (max-width: 900px) {
+	.seatSelectionModal {
+		width: min(98vw, 1100px);
+		min-height: 78vh;
+		max-height: 94vh;
+	}
+}
+
+@media (max-width: 640px) {
+	.seatSelectionModal {
+		width: 96vw;
+		min-height: 76vh;
+		padding: 16px;
+	}
+}
+
+.seatModalSection {
+	margin-bottom: 20px;
+}
+
+.seatModalSection label {
+	display: block;
+	font-weight: 600;
+	margin-bottom: 8px;
+	color: var(--text-dark);
+	font-size: 14px;
+}
+
+.seatModalSection select {
+	width: 100%;
+	padding: 8px 10px;
+	font-size: 14px;
+}
+
+.modalActions {
+	display: flex;
+	gap: 8px;
+	margin-top: 16px;
+}
+
+.modalActions button {
+	flex: 1;
+}
+
+.modalActions button:disabled {
+	opacity: 0.5;
+	cursor: not-allowed;
+}
+
+/* 占有する座席数の入力行 */
+.seatsCountRow {
+	display: flex;
+	gap: 12px;
+	align-items: center;
+	margin-top: 8px;
+}
+
+.seatsRange {
+	min-width: 80px;
+}
+
+.seatsStepper {
+	display: flex;
+	gap: 6px;
+}
+
+/* base.css の input[type="number"] より優先させるため2クラスで指定 */
+.seatsStepper .seatsInput {
+	width: 60px;
+	padding: 6px;
+	border-radius: 4px;
+	border: 1px solid #ccc;
+	text-align: center;
+}
+
+.seatsUnit {
+	font-weight: 600;
+}

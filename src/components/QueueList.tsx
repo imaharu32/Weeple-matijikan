@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Party, Course } from '../types';
+import styles from './PartyList.module.css';
 
 type Props = {
 	queue: Party[];
@@ -42,8 +43,8 @@ export default function QueueList({
 	};
 
 	return (
-		<div className="queue-list">
-			<div className="list-header">
+		<div className={styles.queueList}>
+			<div className={styles.listHeader}>
 				<h3>列（{queue.length}組）</h3>
 				<button
 					className="toggle-button"
@@ -62,11 +63,11 @@ export default function QueueList({
 				{queue.map((party, index) => (
 					<li
 						key={party.id}
-						className={`card queue-card ${selectedParties.has(party.id) ? 'selected' : ''}`}
+						className={`card ${styles.queueCard} ${selectedParties.has(party.id) ? 'selected' : ''}`}
 						onClick={() => handlePartyClick(party.id)}
 					>
-						<div className="card-left">
-							<div className="badge editable">
+						<div className={styles.cardLeft}>
+							<div className={`${styles.badge} ${styles.editable}`}>
 								<input
 									type="number"
 									min="1"
@@ -80,8 +81,8 @@ export default function QueueList({
 								名
 							</div>
 						</div>
-						<div className="card-body">
-							<div className="party-note editable">
+						<div className={styles.cardBody}>
+							<div className={`${styles.partyNote} ${styles.editable}`}>
 								<input
 									type="text"
 									value={party.note || ''}
@@ -90,13 +91,13 @@ export default function QueueList({
 									onClick={(e) => e.stopPropagation()}
 								/>
 							</div>
-							<div className="meta">参加: {new Date(party.joinAt).toLocaleTimeString()}</div>
-						<div className={`estimate ${estimates && estimates[party.id] === 0 ? 'zero-wait-time' : ''}`}>
+							<div className={styles.meta}>参加: {new Date(party.joinAt).toLocaleTimeString()}</div>
+						<div className={`${styles.estimate} ${estimates && estimates[party.id] === 0 ? styles.zeroWaitTime : ''}`}>
 								{estimates && estimates[party.id] !== undefined
 									? `入店見込み： 約${estimates[party.id]}分`
 									: `推定待ち： 約${Math.round(avgMinutes * index)}分`}
 							</div>
-							<div className="card-actions">
+							<div className={styles.cardActions}>
 								<EnterControls party={party} onEnter={onEnter} onRemove={onRemove} />
 							</div>
 						</div>
@@ -105,7 +106,7 @@ export default function QueueList({
 			</ul>
 
 			{multiSelectMode && selectedParties.size > 0 && (
-				<div className="list-actions">
+				<div className={styles.listActions}>
 					<div className="selected-info">{selectedParties.size}組選択中</div>
 					<div className="action-buttons">
 						<button
@@ -135,7 +136,7 @@ function EnterControls({
 }) {
 
 	return (
-		<div className="enter-controls">
+		<div className={styles.enterControls}>
 			<button
 				onClick={() => {
 					onEnter(party.id);

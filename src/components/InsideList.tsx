@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Inside, Course } from '../types';
 import { getRemainingMinutes } from '../utils';
+import styles from './PartyList.module.css';
 
 type Props = {
 	inside: Inside[];
@@ -49,8 +50,8 @@ export default function InsideList({
 	};
 
 	return (
-		<div className="inside-list">
-			<div className="list-header">
+		<div className={styles.insideList}>
+			<div className={styles.listHeader}>
 				<h3>店内（{inside.reduce((s, p) => s + p.size, 0)}名）</h3>
 				<button
 					className="toggle-button"
@@ -73,11 +74,11 @@ export default function InsideList({
 					return (
 						<li
 							key={i.id}
-							className={`card inside-card ${isSelected ? 'selected' : ''}`}
+							className={`card ${styles.insideCard} ${isSelected ? 'selected' : ''}`}
 							onClick={() => handleInsideClick(i.id)}
 						>
-							<div className="card-left">
-								<div className="badge inside-badge editable">
+							<div className={styles.cardLeft}>
+								<div className={`${styles.badge} ${styles.insideBadge} ${styles.editable}`}>
 									<input
 										type="number"
 										min="1"
@@ -91,8 +92,8 @@ export default function InsideList({
 									名
 								</div>
 							</div>
-							<div className="card-body">
-								<div className="party-note editable">
+							<div className={styles.cardBody}>
+								<div className={`${styles.partyNote} ${styles.editable}`}>
 									<input
 										type="text"
 										value={i.note || ''}
@@ -101,11 +102,11 @@ export default function InsideList({
 										onClick={(e) => e.stopPropagation()}
 									/>
 								</div>
-								{(i.note || '').trim() ? <div className="note-preview">メモ: {i.note}</div> : null}
-							<div className={`meta ${remainMin === 0 ? 'zero-wait-time' : ''}`}>
+								{(i.note || '').trim() ? <div className={styles.notePreview}>メモ: {i.note}</div> : null}
+							<div className={`${styles.meta} ${remainMin === 0 ? styles.zeroWaitTime : ''}`}>
 									{course ? course.name : i.courseId} ／ 残り: {remainMin}分
 								</div>
-								<div className="card-actions">
+								<div className={styles.cardActions}>
 									<button
 										onClick={() => onCheckout(i.id)}
 										className="btn-small btn-checkout"
@@ -126,7 +127,7 @@ export default function InsideList({
 			</ul>
 
 			{multiSelectMode && selectedInside.size > 0 && (
-				<div className="list-actions">
+				<div className={styles.listActions}>
 					<div className="selected-info">{selectedInside.size}組選択中</div>
 					<div className="action-buttons">
 						<button

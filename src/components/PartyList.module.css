@@ -1,0 +1,165 @@
+.listHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 14px;
+	padding-bottom: 10px;
+	border-bottom: 3px solid var(--primary);
+}
+
+.listHeader h3 {
+	font-size: 18px;
+	color: var(--text-dark);
+	font-weight: 700;
+	margin: 0;
+}
+
+.cardLeft {
+	flex: 0 0 60px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.badge {
+	background: var(--bg-light);
+	color: var(--text-dark);
+	font-weight: 800;
+	padding: 10px 14px;
+	border-radius: 24px;
+	border: 2px solid var(--border);
+	font-size: 16px;
+	text-align: center;
+	min-width: 60px;
+}
+
+.badge.editable {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	padding: 8px;
+}
+
+.badge.editable input {
+	width: 40px;
+	border: none;
+	background: transparent;
+	font-weight: 700;
+	text-align: center;
+	padding: 0;
+	font-family: inherit;
+	font-size: 14px;
+}
+
+.cardBody {
+	flex: 1;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.partyNote {
+	font-size: 16px;
+	font-weight: 700;
+	color: var(--text-dark);
+	line-height: 1.4;
+}
+
+.partyNote.editable input {
+	border: 2px solid var(--border);
+	padding: 6px 8px;
+	border-radius: 6px;
+	font-family: inherit;
+	font-size: 16px;
+	font-weight: 700;
+	width: 100%;
+}
+
+.partyNote.editable input::placeholder {
+	color: #ccc;
+}
+
+.meta {
+	font-size: 13px;
+	color: var(--text-muted);
+	font-weight: 500;
+}
+
+.estimate {
+	font-size: 13px;
+	color: var(--primary);
+	font-weight: 700;
+}
+
+.zeroWaitTime {
+	background: var(--error);
+	color: white;
+	padding: 4px 8px;
+	border-radius: 4px;
+	font-weight: 600;
+}
+
+.cardActions {
+	display: flex;
+	gap: 6px;
+	margin-top: 6px;
+	flex-wrap: wrap;
+}
+
+.queueList ul, .insideList ul {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+}
+
+.queueCard {
+	background: linear-gradient(135deg, var(--bg-pale) 0%, var(--bg-light) 100%);
+	border-color: var(--border);
+}
+
+.insideBadge {
+	background: #f5ede4;
+	border-color: #e8dcd4;
+}
+
+.insideCard {
+	background: linear-gradient(135deg, #faf6f2 0%, #f5f1ed 100%);
+	border-color: #e8dcd4;
+}
+
+.enterControls {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	flex-wrap: wrap;
+}
+
+.enterControls select {
+	flex: 1;
+	min-width: 120px;
+}
+
+.listActions {
+	padding: 12px;
+	background: #faf6f2;
+	border-radius: 8px;
+	border: 1px solid var(--border);
+	margin-top: 12px;
+}
+
+@media (max-width: 640px) {
+	.listHeader {
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 8px;
+	}
+}
+
+.notePreview {
+	font-size: 12px;
+	color: var(--text-muted);
+	background: rgba(91, 124, 92, 0.06);
+	border: 1px solid rgba(91, 124, 92, 0.12);
+	border-radius: 8px;
+	padding: 8px 10px;
+}

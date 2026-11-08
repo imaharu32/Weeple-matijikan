@@ -1,0 +1,59 @@
+.periodNote {
+	color: #666;
+	font-size: 13px;
+	margin-top: 0;
+}
+
+.scroll {
+	max-height: 60vh;
+	overflow: auto;
+}
+
+.day {
+	margin-bottom: 12px;
+}
+
+.dayTitle {
+	font-weight: 700;
+	margin-bottom: 6px;
+}
+
+.daySummary {
+	margin-bottom: 8px;
+	color: #444;
+	font-size: 13px;
+}
+
+.courseCount {
+	margin-right: 12px;
+}
+
+.entries {
+	list-style: none;
+	padding: 0;
+}
+
+/* base.css の .card より優先させるため2クラスで指定 */
+:global(.card).entry {
+	margin-bottom: 6px;
+}
+
+.entryRow {
+	display: flex;
+	justify-content: space-between;
+	gap: 12px;
+}
+
+.entryTitle {
+	font-weight: 700;
+}
+
+.entryMeta {
+	color: #666;
+	font-size: 13px;
+}
+
+.footer {
+	text-align: right;
+	margin-top: 12px;
+}

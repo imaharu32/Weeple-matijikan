@@ -1,0 +1,39 @@
+.seatViewSubtitle {
+	font-size: 12px;
+	color: var(--text-muted);
+	margin-top: 2px;
+}
+
+.seatView {
+	background: var(--bg-light);
+	padding: 16px;
+	border: 1px solid var(--border);
+	border-radius: 8px;
+	overflow-y: auto;
+}
+
+.seatViewHeader {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 16px;
+	gap: 12px;
+}
+
+.seatViewHeader h2 {
+	font-size: 18px;
+	font-weight: 600;
+	color: var(--text-dark);
+}
+
+.seatViewActions {
+	margin-top: 16px;
+	padding: 12px;
+	background: var(--bg-pale);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	gap: 12px;
+}

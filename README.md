@@ -69,11 +69,32 @@ src/
   hooks/                  そのほか、モーダル・複数選択・エラー表示用のフック
   services/               Firestore の読み書き
   utils/                  待ち時間の見積もり、座席、日付処理
+  styles/                 全体共通の CSS（tokens.css・base.css）
   constants.ts            店舗ID・コース・座席数・履歴の日数などの定数
   firebase.ts             Firebase の初期化と匿名ログイン
 firestore.rules           Firestore セキュリティルール（コンソールへは手動で反映）
 .github/workflows/ci.yml  push / PR ごとに lint・テスト・ビルドを確認
 ```
+
+## CSS の書き方
+
+CSS Modules ＋ 共通のデザイン変数で書きます。
+
+```
+src/styles/tokens.css           色などのデザイン変数（:root）とブレークポイントの一覧
+src/styles/base.css             全体共通（リセット・フォーム部品・.primary / .secondary / .card / .modal-* など）
+src/App.module.css              画面全体のレイアウト
+src/components/Xxx.module.css   その部品専用のスタイル
+```
+
+- 部品のスタイルは、その部品と同じ名前の `Xxx.module.css` に書き、`import styles from './Xxx.module.css'` で `className={styles.fooBar}` として使う
+  - クラス名は camelCase（`.fooBar`）。ほかの部品とは名前がぶつからない
+  - 待ち列と店内リストは共通の `PartyList.module.css` を使う
+- 複数の部品で使う共通クラス（ボタン・カード・モーダルなど）だけを `base.css` に置く。こちらは kebab-case の文字列（`className="secondary"`）で使う
+- 色は直書きせず、`tokens.css` の変数（`var(--primary)` など）を使う。足りなければ変数を追加する
+- module.css から共通クラスを組み合わせるときは `:global(.card).entry { ... }` のように書く
+- インライン `style={{ ... }}` は、データで変わる値（座席のグループ色など）だけに使う
+- 画面幅の切り替えは 420 / 640 / 900 / 1024px のいずれかにそろえる（`tokens.css` に一覧あり）
 
 ## Firestore のデータ構成
 

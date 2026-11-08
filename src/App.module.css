@@ -1,0 +1,269 @@
+.app {
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	background: var(--bg-light);
+	padding: 16px;
+	overflow-y: auto;
+	overflow-x: hidden;
+}
+
+.appHeader {
+	position: relative;
+	padding: 24px;
+	background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+	color: white;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+	border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+	flex-shrink: 0;
+}
+
+.appHeader h1 {
+	font-size: 32px;
+	margin: 0 0 16px 0;
+	font-weight: 700;
+	letter-spacing: 0.3px;
+	line-height: 1.2;
+}
+
+.headerPreviewEstimate {
+	font-size: 15px;
+	color: rgba(255, 255, 255, 0.92);
+	margin-top: 8px;
+	font-weight: 600;
+}
+
+.headerPreviewCount {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+	margin-top: 8px;
+	font-weight: 600;
+}
+
+.headerCountInput {
+	width: 80px;
+	padding: 6px 8px;
+	border-radius: 4px;
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	background: rgba(255, 255, 255, 0.15);
+	color: white;
+	font-size: 14px;
+	font-weight: 500;
+}
+
+.headerCountInput::placeholder {
+	color: rgba(255, 255, 255, 0.6);
+}
+
+.headerCountLabel {
+	font-size: 13px;
+	color: rgba(255, 255, 255, 0.85);
+	font-weight: 500;
+}
+
+.addButton {
+	position: fixed;
+	right: 24px;
+	top: 24px;
+	background: var(--accent);
+	color: white;
+	width: 96px;
+	height: 96px;
+	padding: 0;
+	font-size: 32px;
+	line-height: 1;
+	border-radius: 50%;
+	font-weight: 800;
+	box-shadow: 0 14px 40px rgba(212, 165, 116, 0.36);
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0;
+	z-index: 110;
+	border: 4px solid rgba(255,255,255,0.08);
+}
+
+.addButton:hover {
+	transform: translateY(-4px) scale(1.03);
+}
+
+.addButton:hover {
+	background: #c4955f;
+	box-shadow: 0 6px 16px rgba(212, 165, 116, 0.35);
+}
+
+.historyButton {
+	position: absolute;
+	right: 280px;
+	top: 20px;
+	background: rgba(255, 255, 255, 0.2);
+	color: white;
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	padding: 8px 12px;
+}
+
+.historyButton:hover {
+	background: rgba(255, 255, 255, 0.3);
+}
+
+.settingsButton {
+	position: absolute;
+	right: 160px;
+	top: 20px;
+	background: rgba(255, 255, 255, 0.2);
+	color: white;
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	padding: 8px 12px;
+}
+
+.settingsButton:hover {
+	background: rgba(255, 255, 255, 0.3);
+}
+
+.mainColumns {
+	display: grid;
+	grid-template-columns: 1fr 1fr;
+	gap: 20px;
+	padding: 20px;
+	flex: 1;
+	overflow: auto;
+	min-height: 500px;
+}
+
+.column {
+	background: var(--bg-pale);
+	border-radius: 10px;
+	padding: 18px;
+	border: 2px solid var(--border);
+	box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.03);
+	overflow-y: auto;
+	min-height: 400px;
+}
+
+.leftColumn, .rightColumn {
+	min-width: 0;
+}
+
+.column::-webkit-scrollbar {
+	width: 8px;
+}
+
+.column::-webkit-scrollbar-track {
+	background: transparent;
+}
+
+.column::-webkit-scrollbar-thumb {
+	background: #d0c8bf;
+	border-radius: 4px;
+}
+
+.column::-webkit-scrollbar-thumb:hover {
+	background: #bfb7ae;
+}
+
+/* 店舗収容人数（表示のみ） */
+.capacitySection {
+	margin-bottom: 12px;
+}
+
+.capacityLabel {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+/* base.css の input[type="number"] より優先させるため2クラスで指定 */
+.capacityLabel .capacityInput {
+	width: 100px;
+	padding: 6px;
+	border-radius: 6px;
+	border: 1px solid #ddd;
+	background: #f7f7f7;
+}
+
+.seatSection {
+	margin-top: 20px;
+	margin-bottom: 12px;
+}
+
+:global(.modal-content).addFormModal {
+	max-width: 720px;
+	padding: 36px;
+}
+
+.errorMessage {
+	position: fixed;
+	top: 12px;
+	left: 50%;
+	transform: translateX(-50%);
+	background: #fee;
+	color: #900;
+	padding: 8px 12px;
+	border-radius: 6px;
+	box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+	z-index: 1000;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	font-size: 14px;
+}
+
+.errorMessageClose {
+	background: transparent;
+	border: none;
+	color: #900;
+	cursor: pointer;
+	padding: 0;
+	font-size: 13px;
+	white-space: nowrap;
+}
+
+.errorMessageClose:hover {
+	text-decoration: underline;
+}
+
+@media (max-width: 1024px) {
+	.mainColumns {
+		flex-direction: column;
+		gap: 12px;
+	}
+
+	.column {
+		max-height: 50vh;
+	}
+}
+
+@media (max-width: 640px) {
+	.appHeader {
+		padding: 12px;
+	}
+
+	.appHeader h1 {
+		font-size: 18px;
+		margin-bottom: 8px;
+	}
+
+	.historyButton, .settingsButton {
+		position: relative;
+		right: auto;
+		top: auto;
+		margin-top: 8px;
+		width: 100%;
+	}
+
+	.headerPreviewEstimate, .headerPreviewCount {
+		font-size: 12px;
+		margin-top: 4px;
+	}
+
+	.mainColumns {
+		padding: 12px;
+		gap: 12px;
+	}
+
+	.column {
+		max-height: 45vh;
+		padding: 12px;
+	}
+}
