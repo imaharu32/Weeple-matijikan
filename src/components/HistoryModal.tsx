@@ -7,12 +7,14 @@ import styles from './HistoryModal.module.css';
 
 type Props = {
 	history: HistoryEntry[];
+	/** 読み込み中（開いた直後） */
+	loading?: boolean;
 	courses: Course[];
 	onRemove: (historyId: string) => void;
 	onClose: () => void;
 };
 
-export default function HistoryModal({ history, courses, onRemove, onClose }: Props) {
+export default function HistoryModal({ history, loading = false, courses, onRemove, onClose }: Props) {
 	const { keys, map } = useMemo(() => groupHistoryByDate(history), [history]);
 
 	return (
@@ -27,7 +29,9 @@ export default function HistoryModal({ history, courses, onRemove, onClose }: Pr
 				</button>
 			}
 		>
-			{history.length === 0 ? (
+			{loading ? (
+				<p className={styles.empty}>読み込んでいます…</p>
+			) : history.length === 0 ? (
 				<p className={styles.empty}>まだ退店したお客さんはいません。</p>
 			) : (
 				<div className={styles.days}>

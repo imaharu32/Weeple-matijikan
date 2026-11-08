@@ -23,10 +23,13 @@ type PartyFormState = { mode: 'add' } | { mode: 'edit'; party: Party };
 
 function App() {
 	const { message, setMessage } = useErrorMessage(5000);
+	// 退店履歴を開いている間だけ、履歴を読み込む（Firestore の読み取り回数を抑えるため）
+	const [showHistory, setShowHistory] = useState(false);
 	const {
 		queue,
 		inside,
 		history,
+		historyLoading,
 		addParty,
 		removeParty,
 		updateParty,
@@ -35,12 +38,11 @@ function App() {
 		removeInside,
 		updateInside,
 		removeHistoryEntry,
-	} = useData(SHOP_ID, setMessage);
+	} = useData(SHOP_ID, setMessage, { withHistory: showHistory });
 
 	const [partyForm, setPartyForm] = useState<PartyFormState | null>(null);
 	const [partyToSeat, setPartyToSeat] = useState<Party | null>(null);
 	const [detailInsideId, setDetailInsideId] = useState<string | null>(null);
-	const [showHistory, setShowHistory] = useState(false);
 	const [previewSize, setPreviewSize] = useState(2);
 
 	// 30秒ごとに再描画して、残り時間や見込み時間を更新する
@@ -205,6 +207,7 @@ function App() {
 			{showHistory && (
 				<HistoryModal
 					history={history}
+					loading={historyLoading}
 					courses={COURSES}
 					onRemove={(id) => void removeHistoryEntry(id)}
 					onClose={() => setShowHistory(false)}

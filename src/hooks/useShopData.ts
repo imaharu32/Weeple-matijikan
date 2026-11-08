@@ -2,6 +2,9 @@
  * 店舗データ（待ち列・店内・履歴）の購読と更新をまとめたフック。
  * 画面側はこのフックが返す値と関数だけを使えばよい。
  * 更新はすべて「先に画面へ反映 → 失敗したら元に戻してメッセージ表示」の流れ。
+ *
+ * Firestore の読み取り回数を抑えるため、待ち列・店内は常に購読し、
+ * 件数が多くなる履歴は withHistory が true のとき（退店履歴を開いている間）だけ購読する。
  */
 
 import { useEffect, useState } from 'react';
@@ -13,10 +16,18 @@ import { addMinutesISO, nowIso, uid } from '../utils';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-export function useShopData(shopId: string, notify: (message: string) => void) {
+export type ShopDataOptions = {
+	/** 履歴を読み込むか（退店履歴を開いている間だけ true にする） */
+	withHistory?: boolean;
+};
+
+export function useShopData(shopId: string, notify: (message: string) => void, options: ShopDataOptions = {}) {
+	const { withHistory = false } = options;
 	const [queue, setQueue] = useState<Party[]>([]);
 	const [inside, setInside] = useState<Inside[]>([]);
 	const [history, setHistory] = useState<HistoryEntry[]>([]);
+	const [historyReady, setHistoryReady] = useState(false);
+	const historyLoading = withHistory && !historyReady;
 
 	useEffect(() => {
 		let isMounted = true;
@@ -25,7 +36,6 @@ export function useShopData(shopId: string, notify: (message: string) => void) {
 		const onListenError = () => {
 			if (isMounted) notify('データの読み込みに失敗しました。通信状況を確認してください。');
 		};
-		const historySince = new Date(Date.now() - HISTORY_DAYS * DAY_MS).toISOString();
 
 		ensureAuthenticated()
 			.then(() => {
@@ -36,9 +46,6 @@ export function useShopData(shopId: string, notify: (message: string) => void) {
 					}, onListenError),
 					api.listenInside(shopId, (items) => {
 						if (isMounted) setInside(items);
-					}, onListenError),
-					api.listenHistory(shopId, historySince, (items) => {
-						if (isMounted) setHistory(items);
 					}, onListenError)
 				);
 			})
@@ -63,6 +70,43 @@ export function useShopData(shopId: string, notify: (message: string) => void) {
 			});
 		};
 	}, [shopId, notify]);
+
+	// 履歴は、退店履歴を開いている間だけ購読する（閉じたら購読をやめる）
+	useEffect(() => {
+		if (!withHistory) return;
+		let isMounted = true;
+		let unsubscribe: (() => void) | undefined;
+		const since = new Date(Date.now() - HISTORY_DAYS * DAY_MS).toISOString();
+
+		ensureAuthenticated()
+			.then(() => {
+				if (!isMounted) return;
+				unsubscribe = api.listenHistory(
+					shopId,
+					since,
+					(items) => {
+						if (!isMounted) return;
+						setHistory(items);
+						setHistoryReady(true);
+					},
+					() => {
+						if (!isMounted) return;
+						setHistoryReady(true);
+						notify('履歴の読み込みに失敗しました。通信状況を確認してください。');
+					}
+				);
+			})
+			.catch(() => {
+				if (isMounted) setHistoryReady(true);
+			});
+
+		return () => {
+			isMounted = false;
+			unsubscribe?.();
+			// 次に開いたときは、読み込み直すまで「読み込み中」と表示する
+			setHistoryReady(false);
+		};
+	}, [shopId, notify, withHistory]);
 
 	// --- 待ち列 ---
 
@@ -205,6 +249,7 @@ export function useShopData(shopId: string, notify: (message: string) => void) {
 		queue,
 		inside,
 		history,
+		historyLoading,
 		addParty,
 		removeParty,
 		updateParty,

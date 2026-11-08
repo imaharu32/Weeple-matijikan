@@ -6,7 +6,7 @@
 
 import { useState } from 'react';
 import { COURSES, EXIT_BUFFER_MINUTES } from '../constants';
-import type { useShopData } from '../hooks/useShopData';
+import type { ShopDataOptions, useShopData } from '../hooks/useShopData';
 import type { HistoryEntry, Inside, Party, SeatDetail } from '../types';
 import { addMinutesISO, nowIso, uid } from '../utils';
 
@@ -37,7 +37,11 @@ function createSample() {
 	return { queue, inside, history };
 }
 
-export function useDemoShopData(_shopId: string, _notify: (message: string) => void): ReturnType<typeof useShopData> {
+export function useDemoShopData(
+	_shopId: string,
+	_notify: (message: string) => void,
+	_options?: ShopDataOptions
+): ReturnType<typeof useShopData> {
 	const [initial] = useState(createSample);
 	const [queue, setQueue] = useState<Party[]>(initial.queue);
 	const [inside, setInside] = useState<Inside[]>(initial.inside);
@@ -47,6 +51,7 @@ export function useDemoShopData(_shopId: string, _notify: (message: string) => v
 		queue,
 		inside,
 		history,
+		historyLoading: false,
 		addParty: async (size, note) => {
 			setQueue((current) => [...current, { id: uid('q_'), size, note: note ?? '', joinAt: nowIso() }]);
 		},

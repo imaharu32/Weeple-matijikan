@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 
 const firebaseConfig = {
@@ -24,7 +24,12 @@ debugLog('Firebase config:', {
 });
 
 const app = initializeApp(firebaseConfig);
-export const db = getFirestore(app);
+// 読み込んだデータを端末（IndexedDB）に保存する。
+// 再読み込みしたときに、変わっていないデータをサーバーから読み直さずに済むので、Firestore の読み取り回数が減る。
+// 複数のタブで開いても動くように、タブ間でキャッシュを共有する。
+export const db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() }),
+});
 export default app;
 
 const auth = getAuth(app);

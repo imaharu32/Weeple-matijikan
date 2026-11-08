@@ -126,6 +126,14 @@ shops/{shopId}
 
 `meta/settings` は以前の「人数ごとの席数の設定」の保存先です。今は使っていないので、残っていても問題ありません。
 
+### 読み取り回数を抑える工夫
+
+Firestore は読み取ったドキュメント数で料金・無料枠（Spark プランは1日5万回）が決まるので、次のようにしています。
+
+- 常に購読するのは、件数の少ない待ち列（`queue`）と店内（`inside`）だけ。`/wait_time` も同じ
+- 件数が増える履歴（`history`）は、「退店履歴」を開いている間だけ購読し、閉じたら購読をやめる（`useShopData` の `withHistory`）
+- 読み込んだデータは端末（IndexedDB）に保存しておき、再読み込みしたときは変わった分だけをサーバーから読む（`firebase.ts` の `persistentLocalCache`）
+
 ## 注意
 
 - Firebase の設定値はビルドした JS に埋め込まれて誰でも見られるので、データの保護は `firestore.rules` が頼りです。
