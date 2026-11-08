@@ -87,7 +87,6 @@ export function estimateWaitingTimeWithSeats(
 
 			entryTime = Math.max(entryTime, releaseEvents[releaseIndex].time);
 			releaseEventsUpTo(entryTime);
-			simTime = entryTime;
 		}
 
 		const waitMinutes = Math.ceil(Math.max(0, entryTime - now) / 60000);
