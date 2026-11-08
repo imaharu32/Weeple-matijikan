@@ -53,9 +53,8 @@ export function ensureAuthenticated(): Promise<void> {
     return initializeAuth();
 }
 
-initializeAuth().catch((err) => {
-    console.error('[Firebase] Initial auth init failed:', err);
-});
+// 匿名ログインは ensureAuthenticated() が最初に呼ばれたとき（＝データを購読するとき）に始まる。
+// 読み込んだだけではネットワークにつながらないので、デモモードでは Firebase を使わずに済む。
 
 if (isDev) {
     onAuthStateChanged(auth, (user) => {

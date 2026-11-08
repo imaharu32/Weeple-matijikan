@@ -1,473 +1,308 @@
-.roomDiagram {
-	background: linear-gradient(180deg, #faf7f2 0%, #f3efe7 100%);
-	border: 1px solid var(--border);
-	border-radius: 12px;
-	padding: 16px;
-	min-height: 720px;
-	box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
-	position: relative;
-	overflow: hidden;
+/* 入口から見た店内。左にボードゲーム棚、テーブルは2列 × 3行、下が入口 */
+.room {
+	display: grid;
+	grid-template-columns: 32px minmax(0, 1fr);
+	grid-template-rows: minmax(0, 1fr) auto;
+	gap: var(--space-3);
 }
 
-.roomDiagram::before {
-	content: '';
-	position: absolute;
-	inset: 0;
-	background-image: radial-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px);
-	background-size: 18px 18px;
-	pointer-events: none;
-	opacity: 0.35;
-}
-
-.roomEntrance {
+.shelf {
+	grid-row: 1 / span 2;
 	display: flex;
-	flex-direction: row;
 	align-items: center;
 	justify-content: center;
-	gap: 8px;
-	padding: 8px 12px;
-	position: absolute;
-	left: 18px;
-	bottom: 18px;
-	width: 120px;
-	border: 2px solid var(--primary);
-	border-radius: 10px;
-	background: white;
-	z-index: 2;
-	box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
-}
-
-.roomEntranceLabel {
-	font-size: 12px;
+	writing-mode: vertical-rl;
+	letter-spacing: 0.3em;
+	background: var(--color-surface-sunken);
+	border-radius: var(--radius-sm);
+	color: var(--color-text-muted);
+	font-size: var(--font-xs);
 	font-weight: 700;
-	color: var(--primary);
-	letter-spacing: 0.06em;
 }
 
-.roomFloor {
+.floor {
 	display: grid;
 	grid-template-columns: repeat(2, minmax(0, 1fr));
-	gap: 18px;
-	position: relative;
-	z-index: 1;
-	margin-left: 152px; /* スペースを確保して左にサイドバーを表示 */
+	gap: var(--space-2) var(--space-3);
 }
 
-.roomSidebar {
-	position: absolute;
-	left: 16px;
-	top: 16px;
-	bottom: 16px;
-	width: 120px;
-	border-radius: 8px;
-	background: rgba(255,255,255,0.95);
-	border: 1px solid var(--border);
+.entrance {
+	justify-self: center;
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	padding: 2px var(--space-4);
+	border: 1px dashed var(--color-border-strong);
+	border-radius: var(--radius-full);
+	color: var(--color-text-muted);
+	font-size: var(--font-sm);
+	font-weight: 700;
+}
+
+/* ===== テーブル ===== */
+
+.table {
+	padding: var(--space-2) var(--space-3);
+	background: var(--color-surface-muted);
+	border: 1px solid var(--color-border);
+	border-radius: var(--radius-md);
+}
+
+.tableHeader {
 	display: flex;
 	align-items: center;
-	justify-content: center;
-	z-index: 1;
-	box-shadow: 0 6px 18px rgba(0,0,0,0.06);
+	justify-content: space-between;
+	margin-bottom: 6px;
 }
 
-.roomSidebarLabel {
+.tableName {
+	font-size: var(--font-sm);
 	font-weight: 800;
-	color: var(--text-dark);
-	font-size: 18px;
-	writing-mode: vertical-rl;
-	text-orientation: mixed;
 }
 
-.roomTable {
-	position: relative;
-	min-height: 220px;
-	border-radius: 16px;
-	background: rgba(255, 255, 255, 0.72);
-	border: 1px solid rgba(0, 0, 0, 0.08);
-	box-shadow: 0 8px 22px rgba(0, 0, 0, 0.06);
-	overflow: visible; /* allow seat actions (buttons) to be visible */
-	padding-bottom: 12px;
-}
-
-.roomTableLabel {
-	position: absolute;
-	top: 10px;
-	left: 50%;
-	transform: translateX(-50%);
-	z-index: 2;
-	padding: 4px 10px;
-	border-radius: 999px;
-	background: rgba(91, 124, 92, 0.12);
-	color: var(--primary);
-	font-size: 12px;
+.tableFree {
+	color: var(--color-success);
+	font-size: var(--font-xs);
 	font-weight: 700;
-	letter-spacing: 0.03em;
 }
 
-.roomLegend {
-	position: absolute;
-	right: 16px;
-	top: 16px;
+.tableFull {
+	color: var(--color-text-subtle);
+}
+
+/* 席 | 天板 | 席 */
+.tableBody {
+	display: grid;
+	grid-template-columns: 44px minmax(0, 1fr) 44px;
+	gap: var(--space-2);
+}
+
+.seatColumn {
+	display: grid;
+	grid-template-rows: repeat(3, 38px);
+	gap: 6px;
+}
+
+.surface {
 	display: flex;
 	flex-direction: column;
-	gap: 8px;
-	z-index: 3;
-}
-
-.legendItem {
-	display: flex;
-	align-items: center;
-	gap: 8px;
-	background: rgba(255,255,255,0.95);
-	padding: 6px 10px;
-	border-radius: 8px;
-	border: 1px solid var(--border);
-	font-size: 13px;
-	color: var(--text-dark);
-}
-
-.legendDot {
-	width: 12px;
-	height: 12px;
-	border-radius: 50%;
-	flex: 0 0 12px;
-}
-
-.legendDot.empty {
-	background: #cfcfcf;
-}
-
-.legendDot.occupied {
-	background: var(--primary);
-}
-
-.statusDotWrapper {
-	position: absolute; left: 8px; top: 8px; z-index: 4;
-}
-
-.statusDot {
-	width: 12px; height: 12px; border-radius: 50%; border: 1px solid rgba(0,0,0,0.06);
-}
-
-.statusDot.empty {
-	background: #d0d0d0;
-}
-
-.statusDot.occupied {
-	background: var(--success);
-}
-
-.seatTooltip {
-	position: absolute;
-	left: 50%;
-	top: -8px;
-	transform: translate(-50%, -100%);
-	display: none;
-	background: white;
-	border: 1px solid var(--border);
-	padding: 8px 10px;
-	border-radius: 8px;
-	box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-	font-size: 12px;
-	white-space: nowrap;
-	z-index: 5;
-}
-
-.seatTooltip.open {
-	display: block;
-}
-
-.roomSeat:hover .seatTooltip {
-	display: none;
-}
-
-.seatTooltip .tooltipName {
-	font-weight: 700; margin-bottom: 4px;
-}
-
-.roomEntrance .roomEntranceIcon {
-	display: flex; align-items: center; justify-content: center; margin-right: 8px;
-}
-
-.roomEntrance {
-	display: flex; align-items: center; gap: 6px;
-}
-
-.roomSeat {
-	position: absolute;
-	width: 44%;
-	min-width: 92px;
-	min-height: 88px;
-	padding: 10px 10px;
-	border-radius: 12px;
-	border: 2px solid var(--border);
-	background: #fff;
-	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-	transition: transform 120ms ease, box-shadow 120ms ease, border-color 120ms ease;
-	cursor: pointer;
-	z-index: 3;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	text-align: center;
-}
-
-.roomSeat:hover {
-	box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
-}
-
-.roomSeat.empty {
-	background: rgba(255, 255, 255, 0.9);
-	color: var(--text-muted);
-}
-
-.roomSeat.occupied {
-	border-color: rgba(0, 0, 0, 0.12);
-}
-
-.roomSeat.selected {
-	border-color: var(--success);
-	box-shadow: 0 0 0 3px rgba(106, 159, 95, 0.16), 0 8px 16px rgba(0, 0, 0, 0.12);
-}
-
-.roomSeatR1c1 {
-	top: 6%;
-	left: 6%;
-}
-
-.roomSeatR1c2 {
-	top: 6%;
-	right: 6%;
-}
-
-.roomSeatR2c1 {
-	top: 36%;
-	left: 6%;
-}
-
-.roomSeatR2c2 {
-	top: 36%;
-	right: 6%;
-}
-
-.roomSeatR3c1 {
-	top: 66%;
-	left: 6%;
-}
-
-.roomSeatR3c2 {
-	top: 66%;
-	right: 6%;
-}
-
-.roomSeatSelectContent, .roomSeatEmptyContent {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	align-items: center;
-	justify-content: center;
-	width: 100%;
-	height: 100%;
-}
-
-.roomSeatViewContent {
-	display: flex;
-	flex-direction: row;
-	align-items: flex-start;
-	justify-content: space-between;
-	gap: 8px;
-	width: 100%;
-	height: 100%;
-	padding-right: 6px;
-}
-
-.roomSeatInfo {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	align-items: stretch;
-	justify-content: center;
-	text-align: left;
-	flex: 2 1 0;
-	padding-right: 8px;
+	gap: var(--space-1);
 	min-width: 0;
+	padding: var(--space-1);
+	overflow: hidden;
+	background: var(--color-table-top);
+	border-radius: var(--radius-sm);
 }
 
-.roomSeatLine1, .roomSeatLine2 {
+/* ===== 席 ===== */
+
+.seat {
 	display: flex;
-	align-items: center;
-	justify-content: space-between;
-	gap: 8px;
-	width: 100%;
-}
-
-.roomSeatName {
-	font-size: 12px;
-	font-weight: 700;
-	color: var(--text-dark);
-}
-
-.roomSeatCount {
-	font-size: 12px;
-	font-weight: 700;
-	color: var(--text-dark);
-}
-
-.roomSeatCourse {
-	font-size: 11px;
-	color: var(--text-dark);
-	line-height: 1.2;
-	max-width: 100%;
-	overflow-wrap: break-word;
-	word-break: break-word;
-}
-
-.roomSeatRemaining, .roomSeatStatus {
-	font-size: 13px;
-	font-weight: 700;
-	color: var(--primary);
-	line-height: 1.1;
-}
-
-.roomSeatStatus {
-	font-size: 11px;
-	font-weight: 600;
-	color: var(--text-muted);
-}
-
-.roomSeatActions {
-	margin-top: 0;
-	display: flex;
-	flex-direction: row;
-	gap: 8px;
-	align-items: center;
-	justify-content: flex-end;
-	flex: 0 0 auto;
-}
-
-.seatSelectCheckbox {
-	width: 22px;
-	height: 22px;
-	border-radius: 999px;
-	background: var(--success);
-	color: white;
-	display: flex;
+	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	font-size: 13px;
+	border: 2px solid transparent;
+	border-radius: var(--radius-sm);
+	font-size: var(--font-md);
+	font-weight: 800;
+	line-height: 1;
+	transition:
+		background-color 120ms ease,
+		border-color 120ms ease,
+		opacity 120ms ease;
+}
+
+.seatPlaceholder {
+	visibility: hidden;
+}
+
+.seatNumber {
+	font-variant-numeric: tabular-nums;
+}
+
+.seatState {
+	margin-top: 2px;
+	font-size: 10px;
 	font-weight: 700;
 }
 
-.roomDiagramSelect .roomSeat {
-	width: 46%;
-	min-width: 96px;
+/* 表示: 空席 */
+.empty {
+	background: var(--color-surface);
+	border-style: dashed;
+	border-color: var(--color-border-strong);
+	color: var(--color-text-subtle);
 }
 
-.roomDiagramSelect .roomSeat.occupied {
-	/* 選択モードでは使用中の席を目立たせる */
-	opacity: 1; /* 不透明にして色で判別 */
-	cursor: not-allowed;
-	background: linear-gradient(135deg, #ffecec, #ffdede); /* 赤系の薄いグラデで注意を促す */
-	border: 2px solid #e06a63; /* 目立つ枠線 */
-	box-shadow: 0 2px 8px rgba(224,106,99,0.18);
-	color: #6a0b08;
-}
-
-.roomDiagramSelect .roomSeat.occupied .roomSeatStatus,
-.roomDiagramSelect .roomSeat.occupied .roomSeatNumber,
-.roomDiagramSelect .roomSeat.occupied .roomSeatCourse {
-	color: #6a0b08; /* テキストも強調色に */
-}
-
-.roomDiagramSelect .roomSeat.occupied:after {
-	/* 小さな使用中ラベルを右上に表示 */
-	content: "使用中";
-	position: absolute;
-	top: 6px;
-	right: 8px;
-	background: #e06a63;
-	color: white;
-	font-size: 11px;
-	padding: 2px 6px;
-	border-radius: 999px;
-}
-
-.roomDiagramSelect .roomSeat.selected {
-	opacity: 1;
-}
-
-@media (max-width: 900px) {
-	.roomDiagram {
-		min-height: 620px;
-	}
-
-	.roomFloor {
-		gap: 12px;
-	}
-}
-
-@media (max-width: 640px) {
-	.roomDiagram {
-		min-height: 560px;
-		padding: 12px;
-	}
-
-	.roomFloor {
-		grid-template-columns: 1fr;
-	}
-
-	.roomTable {
-		min-height: 200px;
-	}
-}
-
-.btnSeatCheckout {
-	padding: 6px 8px;
-	font-size: 12px;
-	font-weight: 600;
-	background: var(--success);
-	color: white;
-	border: none;
-	border-radius: 3px;
+/* 表示: 使用中（組の色） */
+.occupied {
+	background: var(--group-bg);
+	border-color: var(--group-fg);
+	color: var(--group-fg);
 	cursor: pointer;
-	transition: all 0.15s ease;
 }
 
-.btnSeatCheckout:hover {
-	background: #5a8e50;
-	transform: scale(1.05);
+.occupied:hover:not(:disabled) {
+	box-shadow: 0 0 0 3px var(--group-bg);
 }
 
-.btnSeatCheckout:active {
-	transform: scale(0.95);
+.occupied:disabled {
+	cursor: default;
 }
 
-.seatSelectCheckbox {
-	position: absolute;
-	top: 2px;
-	right: 2px;
-	width: 18px;
-	height: 18px;
-	background: var(--success);
-	border-radius: 50%;
+/* 選択: 選べる席 */
+.free {
+	background: var(--color-surface);
+	border-color: var(--color-border-strong);
+	color: var(--color-text-muted);
+	cursor: pointer;
+}
+
+.free:hover {
+	background: var(--color-primary-soft);
+	border-color: var(--color-primary);
+	color: var(--color-primary);
+}
+
+/* 選択: 選んだ席 */
+.chosen {
+	background: var(--color-primary);
+	border-color: var(--color-primary);
+	color: var(--color-text-on-primary);
+	cursor: pointer;
+}
+
+.chosen:hover {
+	background: var(--color-primary-hover);
+}
+
+/* 選択: ほかの組が使っている席 */
+.taken {
+	background: repeating-linear-gradient(
+		135deg,
+		var(--color-surface-sunken) 0 6px,
+		var(--color-seat-taken) 6px 12px
+	);
+	border-color: var(--color-border);
+	color: var(--color-text-subtle);
+	cursor: not-allowed;
+}
+
+/* 編集: この組の席（クリックで外す） / 空いている席（クリックで追加） */
+.removable,
+.addable {
+	cursor: pointer;
+}
+
+.hoverMark {
+	display: none;
+	font-size: 11px;
+	font-weight: 800;
+}
+
+.removable:hover .seatNumber,
+.addable:hover .seatNumber {
+	display: none;
+}
+
+.removable:hover .hoverMark,
+.addable:hover .hoverMark {
+	display: inline;
+}
+
+.removable:hover {
+	border-style: dashed;
+}
+
+.addable:hover {
+	background: var(--color-primary-soft);
+	border-style: solid;
+	border-color: var(--color-primary);
+	color: var(--color-primary);
+}
+
+.addable:hover .hoverMark {
+	font-size: var(--font-lg);
+}
+
+/* 一部の組だけを目立たせるとき、それ以外を薄くする */
+.dimmed {
+	opacity: 0.3;
+}
+
+/* ===== 天板の上の組の名前 ===== */
+
+.groupLabel {
 	display: flex;
-	align-items: center;
-	justify-content: center;
-	font-size: 12px;
-	color: white;
-	font-weight: bold;
+	flex-direction: column;
+	min-width: 0;
+	padding: 2px var(--space-2);
+	background: var(--group-bg);
+	border-left: 3px solid var(--group-fg);
+	border-radius: 4px;
+	font-size: var(--font-xs);
+	line-height: 1.5;
 }
 
-.btnSeatDetails {
-	background: rgba(255, 255, 255, 0.92);
-	border: 1px solid rgba(0, 0, 0, 0.06);
-	color: var(--text-dark);
-	font-size: 12px;
-	padding: 6px 8px;
-	border-radius: 8px;
+/* 名前を押すと詳細が開く */
+.groupButton {
+	width: 100%;
+	border: none;
+	border-left: 3px solid var(--group-fg);
+	color: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+
+.groupButton:hover {
+	box-shadow: inset 0 0 0 1px var(--group-fg);
+}
+
+.groupButton:hover .groupName {
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.groupName {
+	overflow: hidden;
+	font-weight: 800;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.groupMeta {
+	overflow: hidden;
+	color: var(--color-text-muted);
+	font-size: 11px;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.groupTime {
 	font-weight: 700;
 }
 
-.btnSeatDetails:hover {
-	background: white;
-	box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+.groupTime.warning {
+	color: var(--color-warning);
+}
+
+.groupTime.danger {
+	color: var(--color-danger);
+}
+
+/* 画面の高さが低いとき（ノートPCなど）は席を少し低くして、図全体が収まるようにする */
+@media (max-height: 860px) {
+	.seatColumn {
+		grid-template-rows: repeat(3, 30px);
+		gap: 4px;
+	}
+
+	.tableHeader {
+		margin-bottom: var(--space-1);
+	}
+
+	.groupLabel {
+		line-height: 1.35;
+	}
 }

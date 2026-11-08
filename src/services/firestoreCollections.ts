@@ -15,14 +15,12 @@ import {
 	type FirestoreError,
 	type QuerySnapshot,
 } from 'firebase/firestore';
-import type { Party, Inside, HistoryEntry, SeatDetail, SeatsRangePerPartySize } from '../types';
-import { parseSeatsRangePerPartySize } from '../utils/seatUtils';
+import type { Party, Inside, HistoryEntry, SeatDetail } from '../types';
 
 // shops/{shopId}/...
 const queueCol = (shopId: string) => collection(db, 'shops', shopId, 'queue');
 const insideCol = (shopId: string) => collection(db, 'shops', shopId, 'inside');
 const historyCol = (shopId: string) => collection(db, 'shops', shopId, 'history');
-const settingsDoc = (shopId: string) => doc(db, 'shops', shopId, 'meta', 'settings');
 
 type ErrorHandler = (error: FirestoreError) => void;
 
@@ -141,28 +139,5 @@ export function listenHistory(
 		query(historyCol(shopId), where('exitAt', '>=', sinceIso), orderBy('exitAt', 'desc')),
 		(snapshot) => cb(toItems<HistoryEntry>(snapshot)),
 		logAndForward('listenHistory', onError)
-	);
-}
-
-// --- 設定 ---
-
-/** 座席ルールを購読する。未保存・形が不正なら null を渡す */
-export function listenSeatsRangePerPartySize(
-	shopId: string,
-	cb: (rules: SeatsRangePerPartySize | null) => void,
-	onError?: ErrorHandler
-) {
-	return onSnapshot(
-		settingsDoc(shopId),
-		(snapshot) => cb(parseSeatsRangePerPartySize(snapshot.data()?.seatsRangePerPartySize)),
-		logAndForward('listenSeatsRangePerPartySize', onError)
-	);
-}
-
-export async function saveSeatsRangePerPartySize(shopId: string, rules: SeatsRangePerPartySize) {
-	await setDoc(
-		settingsDoc(shopId),
-		{ seatsRangePerPartySize: rules, updatedAt: serverTimestamp() },
-		{ merge: true }
 	);
 }

@@ -1,147 +1,139 @@
 import React, { useMemo, useState } from 'react';
-import { Party, Course, UnitSeat, SeatDetail, Inside } from '../types';
-import { getSeatsRangeForPartySize } from '../utils/seatUtils';
+import { EXIT_BUFFER_MINUTES } from '../constants';
+import { Course, Inside, Party, SeatDetail, UnitSeat } from '../types';
+import { addMinutesISO, formatTime, getOccupiedSeatIds, GroupColor, nowIso, suggestSeats } from '../utils';
 import RoomDiagram from './RoomDiagram';
+import Modal from './ui/Modal';
 import styles from './SeatSelectionModal.module.css';
 
 type Props = {
-    party: Party;
-    courses: Course[];
-    unitSeats: UnitSeat[];
-    inside: Inside[];
-    seatsRangePerPartySize?: Record<number, { min: number; max: number }>;
-    onConfirm: (courseId: string, selectedSeats: SeatDetail[]) => void;
-    onCancel: () => void;
+	party: Party;
+	courses: Course[];
+	unitSeats: UnitSeat[];
+	inside: Inside[];
+	groupColors: Map<string, GroupColor>;
+	onConfirm: (courseId: string, seats: SeatDetail[]) => void;
+	onClose: () => void;
 };
 
-export default function SeatSelectionModal({ party, courses, unitSeats, inside, seatsRangePerPartySize, onConfirm, onCancel }: Props) {
-    const [selectedCourseId, setSelectedCourseId] = useState<string>(courses[0]?.id ?? '');
-    const [selectedSeats, setSelectedSeats] = useState<Set<string>>(new Set());
-    const [targetSeatsCount, setTargetSeatsCount] = useState<number>(0);
+export default function SeatSelectionModal({ party, courses, unitSeats, inside, groupColors, onConfirm, onClose }: Props) {
+	const occupied = useMemo(() => getOccupiedSeatIds(inside), [inside]);
+	const freeCount = unitSeats.length - occupied.size;
 
-    // 座席選択可能な範囲を取得
-    const seatsRange = useMemo(
-        () => getSeatsRangeForPartySize(party.size, seatsRangePerPartySize),
-        [party.size, seatsRangePerPartySize]
-    );
+	const [courseId, setCourseId] = useState(courses[0]?.id ?? '');
+	// 開いた時点で、人数と同じ数のおすすめの席を選んでおく
+	const [selected, setSelected] = useState<Set<string>>(() => new Set(suggestSeats(party.size, unitSeats, occupied)));
 
-    // 初期化：targetSeatsCount がまだ設定されていなければ、min値で初期化
-    if (targetSeatsCount === 0) {
-        setTimeout(() => setTargetSeatsCount(seatsRange.min), 0);
-    }
+	const count = selected.size;
+	const isValid = count >= 1 && !!courseId;
+	const course = courses.find((item) => item.id === courseId);
+	const exitPreview = (minutes: number) => formatTime(addMinutesISO(nowIso(), minutes + EXIT_BUFFER_MINUTES));
 
-    const handleSeatToggle = (seatId: string, isOccupied: boolean) => {
-        if (isOccupied) return;
-        const next = new Set(selectedSeats);
-        if (next.has(seatId)) next.delete(seatId);
-        else {
-            if (next.size >= targetSeatsCount) return;
-            next.add(seatId);
-        }
-        setSelectedSeats(next);
-    };
+	const toggleSeat = (seatId: string) => {
+		if (occupied.has(seatId)) return;
+		setSelected((current) => {
+			const next = new Set(current);
+			if (next.has(seatId)) next.delete(seatId);
+			else next.add(seatId);
+			return next;
+		});
+	};
 
-    const isConfirmDisabled = selectedSeats.size !== targetSeatsCount || targetSeatsCount === 0;
+	const confirm = () => {
+		if (!isValid) return;
+		const seats = unitSeats
+			.filter((seat) => selected.has(seat.id))
+			.map((seat) => ({ id: seat.id, tableNumber: seat.tableNumber, seatIndex: seat.seatIndex }));
+		onConfirm(courseId, seats);
+	};
 
-    return (
-        <div className="modal-overlay" onClick={onCancel}>
-            <div className={`modal-content ${styles.seatSelectionModal}`} onClick={(e) => e.stopPropagation()}>
-                <h3>座席を選択 ({selectedSeats.size}/{targetSeatsCount}席) 【{party.size}人客】</h3>
+	return (
+		<Modal
+			size="xl"
+			title="席を選んで入店"
+			subtitle={`${party.size}名${party.note ? `（${party.note}）` : ''}`}
+			onClose={onClose}
+			footer={
+				<>
+					<span className={styles.footerSummary}>
+						{course?.name} ・ <span className="num">{count}</span>席
+					</span>
+					<button type="button" className="btn btn-secondary" onClick={onClose}>
+						キャンセル
+					</button>
+					<button type="button" className="btn btn-primary btn-lg" onClick={confirm} disabled={!isValid}>
+						この席で入店する
+					</button>
+				</>
+			}
+		>
+			<div className={styles.layout}>
+				<div className={styles.side}>
+					<section className={styles.step}>
+						<h3 className={styles.stepTitle}>
+							<span className={styles.stepNo}>1</span>コースを選ぶ
+						</h3>
+						<div className={styles.courses} role="radiogroup" aria-label="コース">
+							{courses.map((item) => (
+								<button
+									key={item.id}
+									type="button"
+									role="radio"
+									aria-checked={item.id === courseId}
+									className={`${styles.course} ${item.id === courseId ? styles.courseSelected : ''}`}
+									onClick={() => setCourseId(item.id)}
+								>
+									<span className={styles.courseName}>{item.name}</span>
+									<span className={styles.courseMeta}>{exitPreview(item.minutes)} ごろ退店</span>
+								</button>
+							))}
+						</div>
+					</section>
 
-                <div className={styles.seatModalSection}>
-                    <label>コースを選択：</label>
-                    <div className={styles.courseOptions}>
-                        {courses.map((course) => (
-                            <button
-                                key={course.id}
-                                type="button"
-                                className={`${styles.courseOption} ${selectedCourseId === course.id ? styles.selected : ''}`}
-                                onClick={() => setSelectedCourseId(course.id)}
-                            >
-                                <div className={styles.courseMinutes}>{course.minutes}分</div>
-                                <div className={styles.courseName}>{course.name}</div>
-                            </button>
-                        ))}
-                    </div>
-                </div>
+					<section className={styles.step}>
+						<h3 className={styles.stepTitle}>
+							<span className={styles.stepNo}>2</span>席を選ぶ
+						</h3>
+						<p className={styles.help}>
+							人数分の席を、おすすめとして選んであります。変えるときは右の図の席をクリックしてください（何席でも選べます）。
+						</p>
+						<div className={`${styles.count} ${count >= 1 ? styles.countOk : styles.countNg}`}>
+							<span>
+								選択中 <strong className="num">{count}</strong>席
+							</span>
+							<span className={styles.countMessage}>
+								{count === 0 ? '席を1つ以上選んでください' : `${party.size}名で${count}席を使います`}
+							</span>
+						</div>
+						{freeCount < party.size && (
+							<p className={styles.warning}>空いている席が人数より少なくなっています（空き {freeCount}席）。</p>
+						)}
+						<div className={styles.seatActions}>
+							<button
+								type="button"
+								className="btn btn-secondary btn-sm"
+								onClick={() => setSelected(new Set(suggestSeats(party.size, unitSeats, occupied)))}
+							>
+								おすすめの席を選び直す
+							</button>
+							<button type="button" className="btn btn-ghost btn-sm" onClick={() => setSelected(new Set())} disabled={count === 0}>
+								選択を解除
+							</button>
+						</div>
+					</section>
+				</div>
 
-                <div className={styles.seatModalSection}>
-                    <label>占有する座席数を選択：</label>
-                    <div className={styles.seatsCountRow}>
-                        <span className={styles.seatsRange}>
-                            {seatsRange.min}～{seatsRange.max}席
-                        </span>
-                        <div className={styles.seatsStepper}>
-                            <button
-                                type="button"
-                                className="secondary"
-                                onClick={() => setTargetSeatsCount(Math.max(seatsRange.min, targetSeatsCount - 1))}
-                                disabled={targetSeatsCount <= seatsRange.min}
-                            >
-                                −
-                            </button>
-                            <input
-                                type="number"
-                                min={seatsRange.min}
-                                max={seatsRange.max}
-                                value={targetSeatsCount}
-                                onChange={(e) => {
-                                    const val = Number(e.target.value);
-                                    if (!isNaN(val)) {
-                                        setTargetSeatsCount(Math.max(seatsRange.min, Math.min(seatsRange.max, val)));
-                                    }
-                                }}
-                                className={styles.seatsInput}
-                            />
-                            <button
-                                type="button"
-                                className="secondary"
-                                onClick={() => setTargetSeatsCount(Math.min(seatsRange.max, targetSeatsCount + 1))}
-                                disabled={targetSeatsCount >= seatsRange.max}
-                            >
-                                ＋
-                            </button>
-                        </div>
-                        <span className={styles.seatsUnit}>席</span>
-                    </div>
-                </div>
-
-                <div className={styles.seatModalSection}>
-                    <label>入口から見た教室図（空席を選択）</label>
-                    <RoomDiagram
-                        unitSeats={unitSeats}
-                        inside={inside}
-                        courses={courses}
-                        mode="select"
-                        selectedSeatIds={selectedSeats}
-                        onSeatClick={(seatId, occupiedByInsideId) => handleSeatToggle(seatId, !!occupiedByInsideId)}
-                    />
-                </div>
-
-                <div className={styles.modalActions}>
-                    <button className="btn-cancel" onClick={onCancel}>
-                        キャンセル
-                    </button>
-                    <button
-                        className="primary"
-                        onClick={() => {
-                            if (!isConfirmDisabled) {
-                                // Convert selected seat IDs to SeatDetail objects
-                                const selectedSeatDetails = Array.from(selectedSeats)
-                                    .map(seatId => {
-                                        const seat = unitSeats.find(s => s.id === seatId);
-                                        return seat ? { id: seat.id, tableNumber: seat.tableNumber, seatIndex: seat.seatIndex } : null;
-                                    })
-                                    .filter((s): s is SeatDetail => s !== null);
-                                onConfirm(selectedCourseId, selectedSeatDetails);
-                            }
-                        }}
-                        disabled={isConfirmDisabled}
-                    >
-                        確定
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
+				<div className={styles.map}>
+					<RoomDiagram
+						unitSeats={unitSeats}
+						inside={inside}
+						groupColors={groupColors}
+						mode="select"
+						selectedSeatIds={selected}
+						onSeatClick={toggleSeat}
+					/>
+				</div>
+			</div>
+		</Modal>
+	);
 }

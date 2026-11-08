@@ -9,10 +9,13 @@ React + TypeScript + Vite で作っていて、データは Firebase（Firestore
 ## 主な機能
 
 - 待ち列への追加・編集・削除と、組ごとの入店見込み時間の表示
-- 座席（6人テーブル × 6 = 36席）を選んで入店、退店で履歴に移動
-- 人数ごとに使う席数のルール設定（Firestore に保存され、全端末で共有）
-- 日付ごとの来店履歴（直近30日分を表示）
-- `/wait_time`：2人で並んだ場合の待ち時間だけを表示するページ
+- 入店時の席選び（人数分のおすすめの席を自動で選択。席は何席でも選べる）
+- 座席図（6人テーブル × 6 = 36席。組ごとに色分けし、席をクリックするとその組の詳細を開く）
+- 店内の組の延長・人数やコースの変更・席の変更・退店
+- 日付ごとの退店履歴（直近30日分を表示）
+- `/wait_time`：お客さん向けに、2人で並んだ場合の待ち時間だけを表示するページ
+
+待ち時間は「1人1席」として、空いている席と退店予定から見積もります。
 
 ## ローカルで動かす
 
@@ -49,6 +52,12 @@ React + TypeScript + Vite で作っていて、データは Firebase（Firestore
 
 Vercel のプレビュー環境（ブランチの push で作られる URL）でも同じようにするには、Vercel の環境変数で **Preview** にだけ `REACT_APP_SHOP_ID=dev_shop` を設定してください。
 
+### デモモード（Firebase を使わずに画面を確認する）
+
+`npm run dev` で http://localhost:3000/?demo を開くと、サンプルデータ（待ち列4組・店内5組・履歴）で動きます。
+Firebase にはつながらず、操作はメモリ上だけで行われます（リロードすると元に戻る）。UI の確認や、新しいスタッフの練習に使えます。
+本番ビルドでは `?demo` を付けても無効です（`src/dev/useDemoShopData.ts`）。
+
 ## コマンド
 
 | コマンド | 内容 |
@@ -65,8 +74,10 @@ Vercel のプレビュー環境（ブランチの push で作られる URL）で
 src/
   App.tsx                 画面の組み立て（UIの状態だけを持つ）
   components/             画面の部品（待ち列、店内リスト、座席図、各モーダル）
-  hooks/useShopData.ts    店舗データの購読と更新（待ち列・店内・履歴・座席ルール）
-  hooks/                  そのほか、モーダル・複数選択・エラー表示用のフック
+  components/ui/          共通の部品（Modal・Panel・NumberStepper）
+  hooks/useShopData.ts    店舗データの購読と更新（待ち列・店内・履歴）
+  hooks/                  そのほか、お知らせ表示用のフック
+  dev/                    開発時だけ使うもの（デモモードのサンプルデータ）
   services/               Firestore の読み書き
   utils/                  待ち時間の見積もり、座席、日付処理
   styles/                 全体共通の CSS（tokens.css・base.css）
@@ -81,20 +92,23 @@ firestore.rules           Firestore セキュリティルール（コンソー�
 CSS Modules ＋ 共通のデザイン変数で書きます。
 
 ```
-src/styles/tokens.css           色などのデザイン変数（:root）とブレークポイントの一覧
-src/styles/base.css             全体共通（リセット・フォーム部品・.primary / .secondary / .card / .modal-* など）
+src/styles/tokens.css           デザイン変数（色・余白・角丸・影・文字サイズ）とブレークポイントの一覧
+src/styles/base.css             全体共通（リセット、ボタン .btn、入力欄 .input、ラベル .chip など）
 src/App.module.css              画面全体のレイアウト
 src/components/Xxx.module.css   その部品専用のスタイル
+src/components/ui/              共通の部品（モーダル・見出し付きの枠・数値入力）
 ```
 
 - 部品のスタイルは、その部品と同じ名前の `Xxx.module.css` に書き、`import styles from './Xxx.module.css'` で `className={styles.fooBar}` として使う
   - クラス名は camelCase（`.fooBar`）。ほかの部品とは名前がぶつからない
-  - 待ち列と店内リストは共通の `PartyList.module.css` を使う
-- 複数の部品で使う共通クラス（ボタン・カード・モーダルなど）だけを `base.css` に置く。こちらは kebab-case の文字列（`className="secondary"`）で使う
-- 色は直書きせず、`tokens.css` の変数（`var(--primary)` など）を使う。足りなければ変数を追加する
-- module.css から共通クラスを組み合わせるときは `:global(.card).entry { ... }` のように書く
-- インライン `style={{ ... }}` は、データで変わる値（座席のグループ色など）だけに使う
-- 画面幅の切り替えは 420 / 640 / 900 / 1024px のいずれかにそろえる（`tokens.css` に一覧あり）
+- 複数の部品で使う共通クラスだけを `base.css` に置く。こちらは kebab-case の文字列で使う
+  - ボタン: `className="btn btn-primary"`（ほかに `btn-secondary` / `btn-danger` / `btn-ghost`、大きさ `btn-sm` / `btn-lg`）
+  - 入力欄: `input` / `select` / `textarea`、ラベル付きは `field` ＋ `field-label`
+  - 状態のラベル: `chip`（`chip-success` / `chip-warning` / `chip-danger` / `chip-primary`）
+- モーダルは `components/ui/Modal` を使う（Esc・背景クリックで閉じる。ボタンは `footer` に入れると下に固定される）
+- 色・余白・角丸・影・文字サイズは直書きせず、`tokens.css` の変数（`var(--color-primary)`、`var(--space-4)` など）を使う。足りなければ変数を追加する
+- インライン `style={{ ... }}` は、データで変わる値（組ごとの色など）だけに使う
+- 画面幅の切り替えは 900 / 1280 / 1440px にそろえる（`tokens.css` に一覧あり）
 
 ## Firestore のデータ構成
 
@@ -103,8 +117,9 @@ shops/{shopId}
   queue/{id}      待ち列
   inside/{id}     店内にいる組（座席情報を含む）
   history/{id}    退店した組（exitAt で直近30日分だけ読み込む）
-  meta/settings   設定（seatsRangePerPartySize: 人数ごとの席数ルール）
 ```
+
+`meta/settings` は以前の「人数ごとの席数の設定」の保存先です。今は使っていないので、残っていても問題ありません。
 
 ## 注意
 

@@ -1,23 +1,110 @@
 /*
- * デザイントークン（色など）。見た目の基準はここで決める。
- * 新しく色を足すときは、直書きせずここに変数を追加して var(--xxx) で使う。
+ * デザイントークン。見た目の基準はここで決める。
+ * 色・余白・角丸・影・文字サイズは直書きせず、ここの変数を var(--xxx) で使う。
+ * 足りないときは、ここに変数を追加してから使う。
  *
- * ブレークポイント（CSS変数はメディアクエリで使えないので、この値に揃える）
- *   420px  小さいスマホ
- *   640px  スマホ
- *   900px  タブレット縦
- *   1024px タブレット横・小さいPC
+ * ブレークポイント（CSS変数はメディアクエリで使えないので、この値にそろえる）
+ *   900px  これより狭いと1列（タブレット縦・スマホ）
+ *   1280px これより狭いと2列で、ページ全体をスクロール（小さめのPC）
+ *   1440px これより狭いと3列のまま左右の列を細くする（ノートPC）
+ *   高さ 860px 以下では座席図と上部の集計を詰める
  */
 
 :root {
-	--primary: #5b7c5c;      /* くすんだ緑 */
-	--secondary: #8a7d6f;    /* 暖色ベージュ */
-	--accent: #d4a574;       /* やや明るいベージュ */
-	--bg-light: #f5f3f0;     /* 薄いアイボリー */
-	--bg-pale: #faf8f5;      /* 白に近い薄色 */
-	--border: #e8e3dd;       /* 薄いグレーベージュ */
-	--text-dark: #3a3a3a;    /* ダークグレー */
-	--text-muted: #7a7a7a;   /* ミッドグレー */
-	--error: #c15c54;        /* くすんだ赤 */
-	--success: #6a9f5f;      /* くすんだ緑（濃） */
+	/* ===== 背景・面 ===== */
+	--color-bg: #f3f2ee; /* 画面の背景 */
+	--color-surface: #ffffff; /* カード・パネル */
+	--color-surface-muted: #f8f7f4; /* カード内の補足エリア */
+	--color-surface-sunken: #eceae4; /* 一段沈んだ面（ボタンのホバーなど） */
+
+	/* ===== 枠線 ===== */
+	--color-border: #e1ded6;
+	--color-border-strong: #c7c2b8;
+
+	/* ===== 文字 ===== */
+	--color-text: #1e2320;
+	--color-text-muted: #59605b; /* 補足（白背景でも十分読める濃さ） */
+	--color-text-subtle: #858a86; /* 重要でない補足だけに使う */
+	--color-text-on-primary: #ffffff;
+
+	/* ===== メイン色（落ち着いた深緑） ===== */
+	--color-primary: #2f6b57;
+	--color-primary-hover: #255746;
+	--color-primary-soft: #e4efea;
+	--color-primary-border: #9cc2b3;
+
+	/* ===== 状態 ===== */
+	--color-success: #2e7d4f; /* すぐ案内できる など良い状態 */
+	--color-success-soft: #e5f3ea;
+	--color-warning: #9a5b00; /* もうすぐ時間 など注意 */
+	--color-warning-soft: #fdf1dc;
+	--color-danger: #b4372e; /* 時間超過・削除 */
+	--color-danger-hover: #962c25;
+	--color-danger-soft: #fbe9e7;
+	--color-danger-border: #e3b3ae;
+
+	/* ===== 座席図 ===== */
+	--color-table-top: #e7e0d3; /* テーブルの天板 */
+	--color-seat-taken: #e4e1da; /* 選べない席の斜線 */
+
+	--focus-ring: 0 0 0 3px rgba(47, 107, 87, 0.35);
+	--overlay: rgba(30, 35, 32, 0.45);
+
+	/* ===== 組ごとの色（座席図と店内リストで共通。背景 / 枠・文字） ===== */
+	--group-1-bg: #dce8f7;
+	--group-1-fg: #3f6fae;
+	--group-2-bg: #f7e6c4;
+	--group-2-fg: #96660f;
+	--group-3-bg: #f5dbe1;
+	--group-3-fg: #a8445d;
+	--group-4-bg: #d4eee7;
+	--group-4-fg: #237a66;
+	--group-5-bg: #e6e0f6;
+	--group-5-fg: #6650a6;
+	--group-6-bg: #e6ecd0;
+	--group-6-fg: #5f6f22;
+	--group-7-bg: #f9dfcf;
+	--group-7-fg: #a8572a;
+	--group-8-bg: #e0e5ea;
+	--group-8-fg: #4b5966;
+
+	/* ===== 余白 ===== */
+	--space-1: 4px;
+	--space-2: 8px;
+	--space-3: 12px;
+	--space-4: 16px;
+	--space-5: 20px;
+	--space-6: 24px;
+	--space-8: 32px;
+
+	/* ===== 角丸 ===== */
+	--radius-sm: 6px;
+	--radius-md: 10px;
+	--radius-lg: 14px;
+	--radius-full: 999px;
+
+	/* ===== 影 ===== */
+	--shadow-sm: 0 1px 2px rgba(30, 35, 32, 0.06);
+	--shadow-md: 0 2px 8px rgba(30, 35, 32, 0.08);
+	--shadow-lg: 0 20px 48px rgba(30, 35, 32, 0.22);
+
+	/* ===== 文字 ===== */
+	--font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Hiragino Kaku Gothic ProN', 'Noto Sans JP',
+		'Segoe UI', 'Yu Gothic UI', Meiryo, sans-serif;
+	--font-xs: 12px;
+	--font-sm: 13px;
+	--font-md: 15px;
+	--font-lg: 17px;
+	--font-xl: 20px;
+	--font-2xl: 26px;
+	--font-3xl: 34px;
+
+	/* ===== 操作部品の高さ ===== */
+	--control-sm: 32px;
+	--control-md: 40px;
+	--control-lg: 48px;
+
+	/* ===== 重なり順 ===== */
+	--z-modal: 100;
+	--z-toast: 200;
 }

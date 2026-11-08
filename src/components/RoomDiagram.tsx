@@ -1,216 +1,229 @@
-import React, { useMemo, useState } from 'react';
-import { Course, Inside, UnitSeat } from '../types';
-import { getTableSeatsInfo } from '../utils';
+import React, { CSSProperties } from 'react';
+import { Inside, UnitSeat } from '../types';
+import { GroupColor, remainingStatus } from '../utils';
 import styles from './RoomDiagram.module.css';
-
-type SeatMode = 'view' | 'select';
 
 type Props = {
 	unitSeats: UnitSeat[];
 	inside: Inside[];
-	courses: Course[];
-	mode: SeatMode;
+	groupColors: Map<string, GroupColor>;
+	/**
+	 * view:   使用中の席をクリックすると、その組を開く
+	 * select: 空いている席をクリックして選ぶ（入店時）
+	 * edit:   editingInsideId の組の席を、クリックで追加・削除する（詳細画面）
+	 */
+	mode: 'view' | 'select' | 'edit';
+	/** select / edit: 選んでいる席 */
 	selectedSeatIds?: Set<string>;
-	selectedInsideIds?: Set<string>;
-	focusInsideId?: string;
-	multiSelectMode?: boolean;
-	onSeatClick?: (seatId: string, occupiedByInsideId?: string) => void;
-	onInsideClick?: (insideId: string) => void;
-	onCheckout?: (insideId: string) => void;
+	/** edit: 席を編集している組 */
+	editingInsideId?: string;
+	/** view: この組だけを目立たせる */
+	highlightInsideId?: string;
+	onSeatClick?: (seatId: string, insideId?: string) => void;
+	/** view: テーブルの上の組の名前を押したとき */
+	onGroupClick?: (insideId: string) => void;
 };
 
-const TABLE_POSITIONS = [
-	{ row: 1, col: 1 },
-	{ row: 1, col: 2 },
-	{ row: 2, col: 1 },
-	{ row: 2, col: 2 },
-	{ row: 3, col: 1 },
-	{ row: 3, col: 2 },
-];
-
-// テーブル内の席の位置（seatIndex 0〜5 → 2列 × 3行）
-const SEAT_POSITION_CLASSES = [
-	styles.roomSeatR1c1,
-	styles.roomSeatR1c2,
-	styles.roomSeatR2c1,
-	styles.roomSeatR2c2,
-	styles.roomSeatR3c1,
-	styles.roomSeatR3c2,
-];
+const TABLE_COUNT = 6;
+const SEATS_PER_TABLE = 6;
+/** テーブルの左側・右側に並ぶ席の番号（0始まり）。席番号は 1・2 が手前の行 */
+const LEFT_SEATS = [0, 2, 4];
+const RIGHT_SEATS = [1, 3, 5];
 
 const cx = (...names: Array<string | false | undefined>) => names.filter(Boolean).join(' ');
 
 export default function RoomDiagram({
 	unitSeats,
 	inside,
-	courses,
+	groupColors,
 	mode,
 	selectedSeatIds,
-	selectedInsideIds,
-	focusInsideId,
-	multiSelectMode,
+	editingInsideId,
+	highlightInsideId,
 	onSeatClick,
-	onInsideClick,
-	onCheckout,
+	onGroupClick,
 }: Props) {
-	const courseMap = useMemo(() => new Map(courses.map((course) => [course.id, course])), [courses]);
-	const groupColorMap = useMemo(() => {
-		const palette = [
-			'#E8D4C4', '#D4E8C4', '#C4D4E8', '#E8C4D4', '#E8E4C4', '#D4E8E4',
-			'#E4D4E8', '#E8D4E4', '#D8E4C4', '#C4E4E8', '#E8D0C4', '#D0C4E8',
-			'#E4C4D4', '#D4C4E8', '#C4E8D4', '#E8C4C4',
-		];
-		const map = new Map<string, string>();
-		inside.forEach((item, index) => map.set(item.id, palette[index % palette.length]));
-		return map;
-	}, [inside]);
+	// edit では、編集中の組の席を「いま選んでいる席」に置き換えて表示する
+	const shownInside =
+		mode === 'edit' && editingInsideId
+			? inside.map((entry) =>
+					entry.id === editingInsideId
+						? {
+								...entry,
+								seats: unitSeats
+									.filter((seat) => selectedSeatIds?.has(seat.id))
+									.map((seat) => ({ id: seat.id, tableNumber: seat.tableNumber, seatIndex: seat.seatIndex })),
+							}
+						: entry
+				)
+			: inside;
+	const focusId = mode === 'edit' ? editingInsideId : highlightInsideId;
 
-	const insideMap = useMemo(() => new Map(inside.map((i) => [i.id, i])), [inside]);
+	// 席 id → 使っている組
+	const seatOwner = new Map<string, Inside>();
+	shownInside.forEach((entry) => entry.seats?.forEach((seat) => seatOwner.set(seat.id, entry)));
 
-	const [tooltipSeatId, setTooltipSeatId] = useState<string | null>(null);
+	const colorVars = (entry?: Inside) => {
+		const color = entry ? groupColors.get(entry.id) : undefined;
+		return color ? ({ '--group-bg': color.bg, '--group-fg': color.fg } as CSSProperties) : undefined;
+	};
+
+	const renderSeat = (seat: UnitSeat | undefined) => {
+		if (!seat) return <div className={styles.seatPlaceholder} />;
+		const owner = seatOwner.get(seat.id);
+		const number = seat.seatIndex + 1;
+		const place = `テーブル${seat.tableNumber} 席${number}`;
+
+		if (mode === 'select') {
+			const isSelected = selectedSeatIds?.has(seat.id) ?? false;
+			return (
+				<button
+					type="button"
+					className={cx(styles.seat, owner ? styles.taken : isSelected ? styles.chosen : styles.free)}
+					disabled={!!owner}
+					aria-pressed={isSelected}
+					aria-label={`${place}${owner ? '（使用中）' : isSelected ? '（選択中）' : ''}`}
+					onClick={() => onSeatClick?.(seat.id)}
+				>
+					<span className={styles.seatNumber}>{isSelected ? '✓' : number}</span>
+					{owner && <span className={styles.seatState}>使用中</span>}
+				</button>
+			);
+		}
+
+		if (mode === 'edit') {
+			// この組の席: クリックで外す
+			if (owner && owner.id === editingInsideId) {
+				return (
+					<button
+						type="button"
+						className={cx(styles.seat, styles.occupied, styles.removable)}
+						style={colorVars(owner)}
+						aria-pressed="true"
+						aria-label={`${place}（この組の席。クリックで外す）`}
+						title="クリックでこの席を外す"
+						onClick={() => onSeatClick?.(seat.id)}
+					>
+						<span className={styles.seatNumber}>{number}</span>
+						<span className={styles.hoverMark}>外す</span>
+					</button>
+				);
+			}
+			// ほかの組の席: 選べない
+			if (owner) {
+				return (
+					<div
+						className={cx(styles.seat, styles.occupied, styles.dimmed)}
+						style={colorVars(owner)}
+						aria-label={`${place}（${owner.note || 'メモなし'}が使用中）`}
+					>
+						<span className={styles.seatNumber}>{number}</span>
+					</div>
+				);
+			}
+			// 空いている席: クリックで追加
+			return (
+				<button
+					type="button"
+					className={cx(styles.seat, styles.empty, styles.addable)}
+					aria-pressed="false"
+					aria-label={`${place}（空席。クリックで追加）`}
+					title="クリックでこの席を追加"
+					onClick={() => onSeatClick?.(seat.id)}
+				>
+					<span className={styles.seatNumber}>{number}</span>
+					<span className={styles.hoverMark}>＋</span>
+				</button>
+			);
+		}
+
+		if (!owner) {
+			return (
+				<div className={cx(styles.seat, styles.empty)} aria-label={`${place}（空席）`}>
+					<span className={styles.seatNumber}>{number}</span>
+				</div>
+			);
+		}
+		const dimmed = !!focusId && owner.id !== focusId;
+		return (
+			<button
+				type="button"
+				className={cx(styles.seat, styles.occupied, dimmed && styles.dimmed)}
+				style={colorVars(owner)}
+				title={`${owner.note || 'メモなし'}（${owner.size}名）の詳細を開く`}
+				aria-label={`${place}：${owner.note || 'メモなし'} ${owner.size}名`}
+				onClick={() => onSeatClick?.(seat.id, owner.id)}
+				disabled={!onSeatClick}
+			>
+				<span className={styles.seatNumber}>{number}</span>
+			</button>
+		);
+	};
 
 	return (
-		<div className={cx(styles.roomDiagram, mode === 'select' && styles.roomDiagramSelect)}>
-			<div className={styles.roomSidebar}>
-				<div className={styles.roomSidebarLabel}>ボードゲーム</div>
-			</div>
-
-			<div className={styles.roomLegend}>
-				<div className={styles.legendItem}><span className={cx(styles.legendDot, styles.empty)}/> 空席</div>
-				<div className={styles.legendItem}><span className={cx(styles.legendDot, styles.occupied)}/> 使用中</div>
-			</div>
-
-			<div className={styles.roomFloor}>
-				{TABLE_POSITIONS.map((_, index) => {
-					const tableNum = index + 1;
-					const tableSeats = getTableSeatsInfo(tableNum, unitSeats, inside);
+		<div className={styles.room}>
+			<div className={styles.shelf}>ボードゲーム棚</div>
+			<div className={styles.floor}>
+				{Array.from({ length: TABLE_COUNT }, (_, t) => {
+					const tableNumber = t + 1;
+					const seats = unitSeats
+						.filter((seat) => seat.tableNumber === tableNumber)
+						.sort((a, b) => a.seatIndex - b.seatIndex);
+					const seatAt = (index: number) => seats.find((seat) => seat.seatIndex === index);
+					const groups = Array.from(
+						new Map(seats.map((seat) => seatOwner.get(seat.id)).filter((e): e is Inside => !!e).map((e) => [e.id, e])).values()
+					);
+					const freeCount = seats.filter((seat) => !seatOwner.has(seat.id)).length;
 
 					return (
-						<div key={`table-${tableNum}`} className={styles.roomTable}>
-							<div className={styles.roomTableLabel}>テーブル {tableNum}</div>
-							{tableSeats.map((seatInfo, seatIndex) => {
-								const isOccupied = !!seatInfo.occupiedByInsideId;
-								const seatId = seatInfo.id;
-								const insideId = seatInfo.occupiedByInsideId;
-								const course = isOccupied && insideId ? courseMap.get(inside.find((item) => item.id === insideId)?.courseId ?? '') : null;
-								const isSeatSelected = mode === 'select' ? selectedSeatIds?.has(seatId) : false;
-								const isGroupSelected = mode === 'view' && isOccupied && !!insideId && selectedInsideIds?.has(insideId);
-								const isFocusedInside = mode === 'view' && isOccupied && !!insideId && focusInsideId === insideId;
-								const positionClass = SEAT_POSITION_CLASSES[seatIndex];
-
-								return (
-									<div
-										key={seatId}
-										className={cx(
-											styles.roomSeat,
-											positionClass,
-											isOccupied ? styles.occupied : styles.empty,
-											(isSeatSelected || isGroupSelected) && styles.selected
-										)}
-										tabIndex={mode === 'select' && isOccupied ? -1 : 0}
-										onClick={() => {
-											if (!onSeatClick) return;
-											if (mode === 'view' && !isOccupied) return;
-											onSeatClick(seatId, insideId);
-										}}
-										onTouchStart={() => setTooltipSeatId(seatId)}
-										role="button"
-										aria-disabled={mode === 'select' && isOccupied}
-										aria-label={mode === 'view' && isOccupied && insideId ? '客の詳細を開く' : undefined}
-										style={
-											mode === 'view' && isOccupied && insideId
-												? {
-													backgroundColor: groupColorMap.get(insideId) ?? '#fff',
-													borderColor: isFocusedInside ? 'var(--primary)' : undefined,
-													boxShadow: isFocusedInside
-														? '0 0 0 4px rgba(91, 124, 92, 0.22), 0 10px 22px rgba(0, 0, 0, 0.18)'
-														: undefined,
-											}
-											: undefined
-										}
-										onKeyDown={(e) => {
-											if (mode === 'view' && isOccupied && insideId && (e.key === 'Enter' || e.key === ' ')) {
-												e.preventDefault();
-												onInsideClick?.(insideId);
-											}
-										}}
-									>
-										<div className={styles.statusDotWrapper}>
-											<div className={cx(styles.statusDot, isOccupied ? styles.occupied : styles.empty)} />
-										</div>
-										{mode === 'select' ? (
-											<div className={styles.roomSeatSelectContent}>
-												<div className={styles.roomSeatNumber}>{seatInfo.seatIndex + 1}</div>
-												<div className={styles.roomSeatStatus}>
-													{isOccupied ? '使用中' : isSeatSelected ? '選択中' : '空席'}
+						<div key={tableNumber} className={styles.table}>
+							<div className={styles.tableHeader}>
+								<span className={styles.tableName}>テーブル {tableNumber}</span>
+								<span className={cx(styles.tableFree, freeCount === 0 && styles.tableFull)}>
+									{freeCount === 0 ? '満席' : `空き ${freeCount} / ${SEATS_PER_TABLE}`}
+								</span>
+							</div>
+							<div className={styles.tableBody}>
+								<div className={styles.seatColumn}>{LEFT_SEATS.map((i) => <React.Fragment key={i}>{renderSeat(seatAt(i))}</React.Fragment>)}</div>
+								<div className={styles.surface}>
+									{mode !== 'select' &&
+										groups.map((entry) => {
+											const remaining = remainingStatus(entry.exitAt);
+											const dimmed = !!focusId && entry.id !== focusId;
+											const label = (
+												<>
+													<span className={styles.groupName}>{entry.note || 'メモなし'}</span>
+													<span className={styles.groupMeta}>
+														{entry.size}名・<span className={cx(styles.groupTime, styles[remaining.tone])}>{remaining.label}</span>
+													</span>
+												</>
+											);
+											return mode === 'view' && onGroupClick ? (
+												<button
+													key={entry.id}
+													type="button"
+													className={cx(styles.groupLabel, styles.groupButton, dimmed && styles.dimmed)}
+													style={colorVars(entry)}
+													onClick={() => onGroupClick(entry.id)}
+													title="この組の詳細を開く"
+												>
+													{label}
+												</button>
+											) : (
+												<div key={entry.id} className={cx(styles.groupLabel, dimmed && styles.dimmed)} style={colorVars(entry)}>
+													{label}
 												</div>
-											</div>
-										) : isOccupied ? (
-											<div className={styles.roomSeatViewContent}>
-												<div className={styles.roomSeatInfo}>
-													<div className={styles.roomSeatLine1}>
-														<span className={styles.roomSeatName}>席 {seatInfo.seatIndex + 1}</span>
-														<span className={styles.roomSeatCount}>{seatInfo.occupantSize}名</span>
-													</div>
-													<div className={styles.roomSeatLine2}>
-														<span className={styles.roomSeatCourse}>{course?.name ?? '?'}</span>
-														<span className={styles.roomSeatRemaining}>残り {seatInfo.remainingMinutes}分</span>
-													</div>
-													<div className={cx(styles.seatTooltip, tooltipSeatId === seatId && styles.open)}>
-														<div className={styles.tooltipName}>{insideMap.get(insideId ?? '')?.id ?? '不明'}</div>
-														<div>{course?.name ?? '?'}</div>
-														<div>残り {seatInfo.remainingMinutes}分</div>
-													</div>
-												</div>
-												<div className={styles.roomSeatActions}>
-													{mode === 'view' && isOccupied && insideId && onInsideClick && (
-														<button
-															className={styles.btnSeatDetails}
-															onClick={(e) => {
-																e.stopPropagation();
-																onInsideClick(insideId);
-															}}
-														>
-															詳細
-														</button>
-													)}
-													{!multiSelectMode && onCheckout && insideId && (
-														<button
-															className={styles.btnSeatCheckout}
-															onClick={(e) => {
-																e.stopPropagation();
-																onCheckout(insideId);
-															}}
-														>
-															退店
-														</button>
-													)}
-													{multiSelectMode && insideId && isGroupSelected && (
-														<div className={styles.seatSelectCheckbox}>✓</div>
-													)}
-												</div>
-											</div>
-										) : (
-											<div className={styles.roomSeatEmptyContent}>
-												<div className={styles.roomSeatNumber}>席 {seatInfo.seatIndex + 1}</div>
-												<div className={styles.roomSeatStatus}>空席</div>
-											</div>
-										)}
-										</div>
-				)})}
+											);
+										})}
+								</div>
+								<div className={styles.seatColumn}>{RIGHT_SEATS.map((i) => <React.Fragment key={i}>{renderSeat(seatAt(i))}</React.Fragment>)}</div>
+							</div>
 						</div>
 					);
 				})}
 			</div>
-
-			<div className={styles.roomEntrance}>
-				<div className={styles.roomEntranceIcon} aria-hidden>
-					<svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-						<path d="M5 12h14" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-						<path d="M13 6l6 6-6 6" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-					</svg>
-				</div>
-				<div className={styles.roomEntranceLabel}>入口</div>
+			<div className={styles.entrance}>
+				<span aria-hidden>▼</span> 入口
 			</div>
 		</div>
 	);

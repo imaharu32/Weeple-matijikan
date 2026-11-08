@@ -1,171 +1,146 @@
-import React, { useState } from 'react';
-import { Inside, Course } from '../types';
-import { getRemainingMinutes } from '../utils';
-import styles from './PartyList.module.css';
+import React, { CSSProperties, useState } from 'react';
+import { Course, Inside } from '../types';
+import { describeSeats, elapsedRatio, formatTime, GroupColor, remainingStatus } from '../utils';
+import Panel, { PanelEmpty } from './ui/Panel';
+import styles from './InsideList.module.css';
 
 type Props = {
 	inside: Inside[];
 	courses: Course[];
-	onCheckout: (id: string) => void;
-	onDelete: (id: string) => void;
-	onUpdateInside: (id: string, size: number, note: string) => void;
-	onSelectInside: (id: string) => void;
-	onMultiSelect: (ids: string[]) => void;
-	selectedInside: Set<string>;
-	nowTick?: number;
+	groupColors: Map<string, GroupColor>;
+	onCheckout: (insideId: string) => void;
+	onOpenDetail: (insideId: string) => void;
 };
 
-export default function InsideList({
-	inside,
-	courses,
-	onCheckout,
-	onDelete,
-	onUpdateInside,
-	onSelectInside,
-	onMultiSelect,
-	selectedInside,
-	nowTick,
-}: Props) {
-	// reference nowTick so component re-renders periodically
-	void nowTick;
-	const [multiSelectMode, setMultiSelectMode] = useState(false);
-	const findCourse = (id: string) => courses.find((c) => c.id === id);
+const TONE_CHIP = { danger: 'chip chip-danger', warning: 'chip chip-warning', normal: 'chip' } as const;
 
-	const sorted = [...inside].sort(
-		(a, b) => new Date(a.exitAt).getTime() - new Date(b.exitAt).getTime()
-	);
+export default function InsideList({ inside, courses, groupColors, onCheckout, onOpenDetail }: Props) {
+	const [selectMode, setSelectMode] = useState(false);
+	const [selected, setSelected] = useState<Set<string>>(new Set());
 
-	const handleInsideClick = (id: string) => {
-		if (multiSelectMode) {
-			const newSelected = new Set(selectedInside);
-			if (newSelected.has(id)) {
-				newSelected.delete(id);
-			} else {
-				newSelected.add(id);
-			}
-			onMultiSelect(Array.from(newSelected));
-			return;
-		}
-		onSelectInside(id);
+	const people = inside.reduce((sum, entry) => sum + entry.size, 0);
+	// 退店予定が近い順
+	const sorted = [...inside].sort((a, b) => a.exitAt.localeCompare(b.exitAt));
+
+	const exitSelectMode = () => {
+		setSelectMode(false);
+		setSelected(new Set());
 	};
+	const toggle = (id: string) =>
+		setSelected((current) => {
+			const next = new Set(current);
+			if (next.has(id)) next.delete(id);
+			else next.add(id);
+			return next;
+		});
 
 	return (
-		<div className={styles.insideList}>
-			<div className={styles.listHeader}>
-				<h3>店内（{inside.reduce((s, p) => s + p.size, 0)}名）</h3>
-				<button
-					className="toggle-button"
-					onClick={() => {
-						setMultiSelectMode(!multiSelectMode);
-						if (!multiSelectMode) {
-							onMultiSelect([]);
-						}
-					}}
-				>
-					{multiSelectMode ? '通常に戻す' : '複数選択'}
-				</button>
-			</div>
-			<ul>
-				{sorted.map((i) => {
-					const remainMin = getRemainingMinutes(i.exitAt);
-					const course = findCourse(i.courseId);
-					const isSelected = selectedInside.has(i.id);
-
-					return (
-						<li
-							key={i.id}
-							className={`card ${styles.insideCard} ${isSelected ? 'selected' : ''}`}
-							onClick={() => handleInsideClick(i.id)}
-						>
-							<div className={styles.cardLeft}>
-								<div className={`${styles.badge} ${styles.insideBadge} ${styles.editable}`}>
-									<input
-										type="number"
-										min="1"
-										value={i.size}
-										onChange={(e) => {
-											const newSize = Math.max(1, parseInt(e.target.value) || 1);
-											onUpdateInside(i.id, newSize, i.note || '');
-										}}
-										onClick={(e) => e.stopPropagation()}
-									/>
-									名
-								</div>
-							</div>
-							<div className={styles.cardBody}>
-								<div className={`${styles.partyNote} ${styles.editable}`}>
-									<input
-										type="text"
-										value={i.note || ''}
-										placeholder="メモを追加"
-										onChange={(e) => onUpdateInside(i.id, i.size, e.target.value)}
-										onClick={(e) => e.stopPropagation()}
-									/>
-								</div>
-								{(i.note || '').trim() ? <div className={styles.notePreview}>メモ: {i.note}</div> : null}
-							<div className={`${styles.meta} ${remainMin === 0 ? styles.zeroWaitTime : ''}`}>
-									{course ? course.name : i.courseId} ／ 残り: {remainMin}分
-								</div>
-								<div className={styles.cardActions}>
-									<button
-										onClick={() => onCheckout(i.id)}
-										className="btn-small btn-checkout"
-									>
-										退店
-									</button>
-									<button
-										onClick={() => onDelete(i.id)}
-										className="btn-small btn-secondary"
-									>
-										削除
-									</button>
-								</div>
-							</div>
-						</li>
-					);
-				})}
-			</ul>
-
-			{multiSelectMode && selectedInside.size > 0 && (
-				<div className={styles.listActions}>
-					<div className="selected-info">{selectedInside.size}組選択中</div>
-					<div className="action-buttons">
-						<button
-							className="btn-action btn-checkout-multi"
-							onClick={() => {
-								Array.from(selectedInside).forEach((id) => {
-									onCheckout(id);
-								});
-								setMultiSelectMode(false);
-								onMultiSelect([]);
-							}}
-						>
-							選択を退店
+		<Panel
+			title="店内"
+			badge={`${inside.length}組・${people}名`}
+			description="退店予定が近い順です。色は座席図と同じです。"
+			actions={
+				!selectMode && (
+					<button type="button" className="btn btn-ghost btn-sm" onClick={() => setSelectMode(true)} disabled={inside.length === 0}>
+						まとめて退店
+					</button>
+				)
+			}
+			footer={
+				selectMode && (
+					<div className={styles.bulkBar}>
+						<span className={styles.bulkCount}>
+							{selected.size === 0 ? '退店する組を選んでください' : `${selected.size}組を選択中`}
+						</span>
+						<button type="button" className="btn btn-ghost btn-sm" onClick={exitSelectMode}>
+							やめる
 						</button>
 						<button
-							className="btn-action btn-delete-multi"
+							type="button"
+							className="btn btn-primary btn-sm"
+							disabled={selected.size === 0}
 							onClick={() => {
-								Array.from(selectedInside).forEach((id) => {
-									onDelete(id);
-								});
-								setMultiSelectMode(false);
-								onMultiSelect([]);
+								selected.forEach((id) => onCheckout(id));
+								exitSelectMode();
 							}}
 						>
-							選択を削除
-						</button>
-						<button
-							className="btn-action btn-cancel"
-							onClick={() => {
-								setMultiSelectMode(false);
-								onMultiSelect([]);
-							}}
-						>
-							キャンセル
+							選んだ組を退店
 						</button>
 					</div>
-				</div>
+				)
+			}
+		>
+			{inside.length === 0 ? (
+				<PanelEmpty title="店内にお客さんはいません" description="待ち列の「席を選んで入店」から案内すると、ここに表示されます。" />
+			) : (
+				<ul className={styles.list}>
+					{sorted.map((entry) => {
+						const course = courses.find((item) => item.id === entry.courseId);
+						const remaining = remainingStatus(entry.exitAt);
+						const color = groupColors.get(entry.id);
+						const isSelected = selected.has(entry.id);
+						const progress = elapsedRatio(entry.enterAt, entry.exitAt);
+						const colorVars = { '--group-bg': color?.bg, '--group-fg': color?.fg } as CSSProperties;
+
+						const content = (
+							<>
+								<div className={styles.head}>
+									<span className={styles.dot} aria-hidden />
+									{selectMode ? (
+										<span className={entry.note ? styles.name : styles.noName}>{entry.note || 'メモなし'}</span>
+									) : (
+										// 名前（メモ）を押すと詳細を開く
+										<button
+											type="button"
+											className={`${entry.note ? styles.name : styles.noName} ${styles.nameButton}`}
+											onClick={() => onOpenDetail(entry.id)}
+											title="この組の詳細を開く"
+										>
+											{entry.note || 'メモなし'}
+										</button>
+									)}
+									<span className={`${styles.size} num`}>{entry.size}名</span>
+								</div>
+								<div className={styles.info}>
+									{course?.name ?? entry.courseId} ・ {describeSeats(entry.seats)}
+								</div>
+								<div className={styles.time}>
+									<span className={TONE_CHIP[remaining.tone]}>{remaining.label}</span>
+									<span className={styles.exitAt}>{formatTime(entry.exitAt)} 退店予定</span>
+								</div>
+								<div className={styles.progress} aria-hidden>
+									<div className={`${styles.progressBar} ${styles[remaining.tone]}`} style={{ width: `${progress * 100}%` }} />
+								</div>
+							</>
+						);
+
+						return (
+							<li key={entry.id} style={colorVars}>
+								{selectMode ? (
+									<label className={`${styles.card} ${styles.selectable} ${isSelected ? styles.selected : ''}`}>
+										<input type="checkbox" className={styles.checkbox} checked={isSelected} onChange={() => toggle(entry.id)} />
+										<div className={styles.content}>{content}</div>
+									</label>
+								) : (
+									<div className={styles.card}>
+										<div className={styles.content}>
+											{content}
+											<div className={styles.actions}>
+												<button type="button" className="btn btn-secondary btn-sm" onClick={() => onCheckout(entry.id)}>
+													退店する
+												</button>
+												<button type="button" className="btn btn-ghost btn-sm" onClick={() => onOpenDetail(entry.id)}>
+													詳細・編集
+												</button>
+											</div>
+										</div>
+									</div>
+								)}
+							</li>
+						);
+					})}
+				</ul>
 			)}
-		</div>
+		</Panel>
 	);
 }

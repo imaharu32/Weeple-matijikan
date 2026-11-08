@@ -1,0 +1,159 @@
+.list {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+/* 組の色は親から --group-bg / --group-fg で受け取る */
+.card {
+	display: flex;
+	gap: var(--space-3);
+	padding: var(--space-3) var(--space-4);
+	background: var(--color-surface);
+	border: 1px solid var(--color-border);
+	border-left: 5px solid var(--group-fg, var(--color-border-strong));
+	border-radius: var(--radius-md);
+	box-shadow: var(--shadow-sm);
+}
+
+.selectable {
+	cursor: pointer;
+}
+
+.selectable:hover {
+	background: var(--color-surface-muted);
+}
+
+.selected {
+	background: var(--color-primary-soft);
+	border-color: var(--color-primary-border);
+	border-left-color: var(--group-fg, var(--color-primary));
+}
+
+.selected:hover {
+	background: var(--color-primary-soft);
+}
+
+.checkbox {
+	flex-shrink: 0;
+	width: 20px;
+	height: 20px;
+	margin-top: 2px;
+	accent-color: var(--color-primary);
+}
+
+.content {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+	min-width: 0;
+	flex: 1;
+}
+
+.head {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.dot {
+	flex-shrink: 0;
+	width: 12px;
+	height: 12px;
+	border-radius: var(--radius-full);
+	background: var(--group-bg, var(--color-surface-sunken));
+	border: 2px solid var(--group-fg, var(--color-border-strong));
+}
+
+.name {
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	font-weight: 700;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.noName {
+	flex: 1;
+	color: var(--color-text-subtle);
+	font-size: var(--font-sm);
+}
+
+/* 名前（メモ）を押すと詳細が開く */
+.nameButton {
+	padding: 0;
+	border: none;
+	background: none;
+	text-align: left;
+	cursor: pointer;
+}
+
+.nameButton:hover {
+	color: var(--color-primary);
+	text-decoration: underline;
+	text-underline-offset: 3px;
+}
+
+.size {
+	flex-shrink: 0;
+	font-size: var(--font-lg);
+	font-weight: 800;
+}
+
+.info {
+	color: var(--color-text-muted);
+	font-size: var(--font-sm);
+}
+
+.time {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.exitAt {
+	color: var(--color-text-muted);
+	font-size: var(--font-sm);
+}
+
+.progress {
+	height: 4px;
+	overflow: hidden;
+	border-radius: var(--radius-full);
+	background: var(--color-surface-sunken);
+}
+
+.progressBar {
+	height: 100%;
+	border-radius: var(--radius-full);
+	background: var(--color-primary);
+}
+
+.progressBar.warning {
+	background: var(--color-warning);
+}
+
+.progressBar.danger {
+	background: var(--color-danger);
+}
+
+.actions {
+	display: flex;
+	gap: var(--space-2);
+	margin-top: var(--space-1);
+}
+
+.bulkBar {
+	display: flex;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.bulkCount {
+	flex: 1;
+	color: var(--color-text-muted);
+	font-size: var(--font-sm);
+	font-weight: 700;
+}

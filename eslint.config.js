@@ -22,7 +22,7 @@ export default defineConfig([
 		rules: {
 			// CRA 時代と同じく、any と未使用変数は警告にとどめる
 			'@typescript-eslint/no-explicit-any': 'off',
-			'@typescript-eslint/no-unused-vars': 'warn',
+			'@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
 			// 日本語の文言に入る全角スペースは許可する
 			'no-irregular-whitespace': ['error', { skipStrings: true, skipTemplates: true, skipJSXText: true }],
 			// React Compiler 系の新しいルール。既存コードが引っかかるので、直すまでは警告にしておく

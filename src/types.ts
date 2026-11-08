@@ -46,11 +46,3 @@ export type HistoryEntry = {
 	exitAt: string; // ISO - 退店（または削除）した時刻
 	seats: SeatDetail[];
 };
-
-export type SeatsRange = { min: number; max: number };
-
-/**
- * 人数ごとに使う席数の範囲
- * 例: { 1: { min: 1, max: 2 }, 2: { min: 2, max: 4 }, ... }
- */
-export type SeatsRangePerPartySize = Record<number, SeatsRange>;

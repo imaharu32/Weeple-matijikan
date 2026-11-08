@@ -1,14 +1,14 @@
 /**
- * 店舗データ（待ち列・店内・履歴・座席ルール）の購読と更新をまとめたフック。
+ * 店舗データ（待ち列・店内・履歴）の購読と更新をまとめたフック。
  * 画面側はこのフックが返す値と関数だけを使えばよい。
  * 更新はすべて「先に画面へ反映 → 失敗したら元に戻してメッセージ表示」の流れ。
  */
 
 import { useEffect, useState } from 'react';
 import { ensureAuthenticated } from '../firebase';
-import { COURSES, DEFAULT_SEATS_RANGE_PER_PARTY_SIZE, EXIT_BUFFER_MINUTES, HISTORY_DAYS } from '../constants';
+import { COURSES, EXIT_BUFFER_MINUTES, HISTORY_DAYS } from '../constants';
 import * as api from '../services/firestoreCollections';
-import type { HistoryEntry, Inside, Party, SeatDetail, SeatsRangePerPartySize } from '../types';
+import type { HistoryEntry, Inside, Party, SeatDetail } from '../types';
 import { addMinutesISO, nowIso, uid } from '../utils';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -17,9 +17,6 @@ export function useShopData(shopId: string, notify: (message: string) => void) {
 	const [queue, setQueue] = useState<Party[]>([]);
 	const [inside, setInside] = useState<Inside[]>([]);
 	const [history, setHistory] = useState<HistoryEntry[]>([]);
-	const [seatsRangePerPartySize, setSeatsRangePerPartySize] = useState<SeatsRangePerPartySize>(
-		DEFAULT_SEATS_RANGE_PER_PARTY_SIZE
-	);
 
 	useEffect(() => {
 		let isMounted = true;
@@ -42,15 +39,17 @@ export function useShopData(shopId: string, notify: (message: string) => void) {
 					}, onListenError),
 					api.listenHistory(shopId, historySince, (items) => {
 						if (isMounted) setHistory(items);
-					}, onListenError),
-					api.listenSeatsRangePerPartySize(shopId, (rules) => {
-						if (isMounted) setSeatsRangePerPartySize(rules ?? DEFAULT_SEATS_RANGE_PER_PARTY_SIZE);
 					}, onListenError)
 				);
 			})
 			.catch((error) => {
 				console.error('[useShopData] Authentication failed:', error);
-				if (isMounted) notify('認証に失敗しました。ページをリロードしてください。');
+				if (!isMounted) return;
+				notify(
+					import.meta.env.DEV
+						? 'Firebase に接続できませんでした。.env の設定を確認するか、URL の末尾に ?demo を付けてデモモードで開いてください。'
+						: '認証に失敗しました。ページをリロードしてください。'
+				);
 			});
 
 		return () => {
@@ -202,28 +201,10 @@ export function useShopData(shopId: string, notify: (message: string) => void) {
 		}
 	};
 
-	// --- 設定 ---
-
-	/** 座席ルールを保存する。成功したら true */
-	const saveSeatsRange = async (rules: SeatsRangePerPartySize): Promise<boolean> => {
-		const previousRules = seatsRangePerPartySize;
-		setSeatsRangePerPartySize(rules);
-		try {
-			await api.saveSeatsRangePerPartySize(shopId, rules);
-			return true;
-		} catch (error) {
-			console.error('save seats range error', error);
-			setSeatsRangePerPartySize(previousRules);
-			notify('座席ルールの保存に失敗しました。');
-			return false;
-		}
-	};
-
 	return {
 		queue,
 		inside,
 		history,
-		seatsRangePerPartySize,
 		addParty,
 		removeParty,
 		updateParty,
@@ -232,6 +213,5 @@ export function useShopData(shopId: string, notify: (message: string) => void) {
 		removeInside,
 		updateInside,
 		removeHistoryEntry,
-		saveSeatsRange,
 	};
 }

@@ -1,12 +1,15 @@
 import { Inside, Party, SeatDetail } from '../types';
-import { COURSES as courses, DEFAULT_SEATS_RANGE_PER_PARTY_SIZE, UNIT_SEATS as unitSeats } from '../constants';
+import { COURSES as courses, UNIT_SEATS as unitSeats } from '../constants';
 import {
 	addMinutesISO,
+	buildGroupColorMap,
+	describeSeats,
 	estimateForNewParty,
 	estimateWaitingTimeWithSeats,
-	getSeatsRangeForPartySize,
+	getOccupiedSeatIds,
 	groupHistoryByDate,
-	parseSeatsRangePerPartySize,
+	remainingStatus,
+	suggestSeats,
 } from './index';
 
 const NOW = new Date('2026-05-16T10:00:00Z');
@@ -54,16 +57,6 @@ describe('groupHistoryByDate', () => {
 	});
 });
 
-describe('getSeatsRangeForPartySize', () => {
-	test('ルール未指定ならデフォルトの座席範囲を使う', () => {
-		expect(getSeatsRangeForPartySize(2)).toEqual({ min: 2, max: 4 });
-	});
-
-	test('カスタムルールは 1〜6 席の範囲に収める', () => {
-		expect(getSeatsRangeForPartySize(3, { 3: { min: 0, max: 9 } })).toEqual({ min: 1, max: 6 });
-	});
-});
-
 describe('UNIT_SEATS', () => {
 	test('6テーブル × 6席 = 36席で、id が重ならない', () => {
 		expect(unitSeats).toHaveLength(36);
@@ -71,23 +64,53 @@ describe('UNIT_SEATS', () => {
 	});
 });
 
-describe('parseSeatsRangePerPartySize', () => {
-	test('Firestore の map（キーは文字列）を人数ごとのルールに変換する', () => {
-		const result = parseSeatsRangePerPartySize({ '2': { min: 2, max: 3 } });
-		expect(result?.[2]).toEqual({ min: 2, max: 3 });
-		// 保存されていない人数は初期ルールで補う
-		expect(result?.[1]).toEqual(DEFAULT_SEATS_RANGE_PER_PARTY_SIZE[1]);
+describe('suggestSeats', () => {
+	const occupiedOf = (inside: Inside[]) => getOccupiedSeatIds(inside);
+
+	test('1つのテーブルに収まるなら、ちょうど収まるテーブルの席を番号順に選ぶ', () => {
+		// テーブル1は残り2席、ほかは全部空き → 2名ならテーブル1の残り2席
+		const inside = [{ ...insideParty('i1', 4, 30), seats: [0, 1, 2, 3].map((i) => ({ id: `table_1_${i}`, tableNumber: 1, seatIndex: i })) }];
+		expect(suggestSeats(2, unitSeats, occupiedOf(inside))).toEqual(['table_1_4', 'table_1_5']);
 	});
 
-	test('形が正しくない値は無視する', () => {
-		const result = parseSeatsRangePerPartySize({ '2': { min: 4, max: 2 }, '3': { min: 3, max: 5 }, x: { min: 1, max: 1 } });
-		expect(result?.[2]).toEqual(DEFAULT_SEATS_RANGE_PER_PARTY_SIZE[2]);
-		expect(result?.[3]).toEqual({ min: 3, max: 5 });
+	test('どのテーブルにも収まらなければ、空きの多いテーブルから順に埋める', () => {
+		const result = suggestSeats(8, unitSeats, new Set());
+		expect(result).toHaveLength(8);
+		expect(result.slice(0, 6)).toEqual([0, 1, 2, 3, 4, 5].map((i) => `table_1_${i}`));
 	});
 
-	test('未保存・空なら null', () => {
-		expect(parseSeatsRangePerPartySize(undefined)).toBeNull();
-		expect(parseSeatsRangePerPartySize({})).toBeNull();
+	test('空席が足りなければ、選べた分だけ返す', () => {
+		const allButOne = new Set(unitSeats.slice(1).map((s) => s.id));
+		expect(suggestSeats(3, unitSeats, allButOne)).toEqual([unitSeats[0].id]);
+	});
+
+	test('席を変更するときは、その組の席を空席として扱える', () => {
+		const inside = [insideParty('i1', 6, 30)];
+		expect(getOccupiedSeatIds(inside).size).toBe(6);
+		expect(getOccupiedSeatIds(inside, 'i1').size).toBe(0);
+	});
+});
+
+describe('remainingStatus', () => {
+	test('10分より多ければ通常、10分以下は注意、過ぎたら超過', () => {
+		expect(remainingStatus(addMinutesISO(NOW.toISOString(), 25))).toEqual({ minutes: 25, label: '残り25分', tone: 'normal' });
+		expect(remainingStatus(addMinutesISO(NOW.toISOString(), 10)).tone).toBe('warning');
+		expect(remainingStatus(addMinutesISO(NOW.toISOString(), -6))).toEqual({ minutes: -6, label: '6分超過', tone: 'danger' });
+	});
+});
+
+describe('describeSeats', () => {
+	test('テーブル番号と席数をまとめて表示する', () => {
+		expect(describeSeats([{ tableNumber: 2 }, { tableNumber: 2 }])).toBe('テーブル2（2席）');
+		expect(describeSeats([{ tableNumber: 3 }, { tableNumber: 1 }, { tableNumber: 1 }])).toBe('テーブル1・3（3席）');
+	});
+});
+
+describe('buildGroupColorMap', () => {
+	test('同時にいる組には別々の色を割り当てる（8組まで）', () => {
+		const inside = Array.from({ length: 8 }, (_, i) => insideParty(`group_${i}`, 1, 30));
+		const colors = new Set(Array.from(buildGroupColorMap(inside).values()).map((c) => c.bg));
+		expect(colors.size).toBe(8);
 	});
 });
 

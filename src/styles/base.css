@@ -1,311 +1,229 @@
 /*
- * アプリ全体で共通のスタイル（グローバル）
- * - リセット、body、フォーム部品
- * - 複数の部品で使う共通クラス: .primary / .secondary / .btn-small / .card / .toggle-button
- *   / .modal-overlay / .modal-content / .btn-action（複数選択の操作ボタン）
+ * アプリ全体で共通のスタイル（グローバル。クラス名は kebab-case の文字列で使う）
+ * - リセット・body・フォーカス表示
+ * - ボタン:   .btn ＋ .btn-primary / .btn-secondary / .btn-danger / .btn-ghost、大きさ .btn-sm / .btn-lg
+ * - 入力欄:   .input / .select / .textarea、ラベル付きの欄は .field ＋ .field-label
+ * - ラベル:   .chip ＋ .chip-success / .chip-warning / .chip-danger / .chip-primary
+ * - 数字:     .num（桁がそろう数字）
  * 部品専用のスタイルは各部品の *.module.css に書く。
  */
 
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
-}
-
-* {
+*,
+*::before,
+*::after {
+	box-sizing: border-box;
 	margin: 0;
 	padding: 0;
-	box-sizing: border-box;
 }
 
-html, body, #root {
+html,
+body,
+#root {
 	height: 100%;
-	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-	'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-	sans-serif;
+}
+
+body {
+	font-family: var(--font-family);
+	font-size: var(--font-md);
+	line-height: 1.5;
+	color: var(--color-text);
+	background: var(--color-bg);
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;
-	background: var(--bg-light);
-	color: var(--text-dark);
 }
 
-button {
-	font-family: inherit;
-	cursor: pointer;
-	transition: all 140ms ease;
-	border-radius: 6px;
-	font-size: 14px;
-	font-weight: 600;
-	border: none;
-}
-
-button:hover {
-	transform: translateY(-2px);
-	box-shadow: 0 6px 16px rgba(0, 0, 0, 0.14);
-}
-
-button:active {
-	transform: translateY(0);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.primary, button.primary {
-	background: var(--primary);
-	color: white;
-	padding: 10px 16px;
-	font-weight: 700;
-}
-
-.primary:hover {
-	background: #4a6844;
-	box-shadow: 0 6px 16px rgba(91, 124, 92, 0.25);
-}
-
-.secondary, button.secondary {
-	background: var(--bg-light);
-	border: 2px solid var(--border);
-	color: var(--text-dark);
-	padding: 10px 16px;
-	font-weight: 600;
-}
-
-.secondary:hover {
-	background: #f9f7f4;
-	border-color: #c8bfb6;
-}
-
-.btn-small {
-	padding: 7px 12px;
-	font-size: 13px;
-	font-weight: 600;
-	border-radius: 6px;
-}
-
-.btn-small.btn-checkout {
-	background: var(--success);
-	color: white;
-}
-
-.btn-small.btn-checkout:hover {
-	background: #5a8e50;
-	box-shadow: 0 4px 12px rgba(106, 159, 95, 0.2);
-}
-
-.btn-small.btn-secondary {
-	background: #f0ebe7;
-	border: 1px solid #ddd;
-	color: var(--text-dark);
-	font-weight: 600;
-}
-
-.btn-small.btn-secondary:hover {
-	background: #ebe5df;
-	border-color: #c8bfb6;
-}
-
-.toggle-button {
-	background: var(--bg-light);
-	border: 2px solid var(--border);
-	color: var(--text-dark);
-	padding: 7px 12px;
-	font-size: 13px;
-	border-radius: 6px;
-	font-weight: 600;
-}
-
-.toggle-button:hover {
-	background: #f0ebe7;
-	border-color: #c8bfb6;
-}
-
-.card {
-	display: flex;
-	gap: 14px;
-	padding: 14px;
-	margin-bottom: 12px;
-	background: white;
-	border-radius: 10px;
-	border: 2px solid var(--border);
-	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-	cursor: pointer;
-	transition: all 150ms ease;
-}
-
-.card:hover {
-	border-color: #d0c8bf;
-	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-	transform: translateY(-1px);
-}
-
-.card.selected {
-	background: #f5ede4;
-	border-color: var(--accent);
-	box-shadow: 0 4px 16px rgba(212, 165, 116, 0.2);
-}
-
-select, input[type="text"], input[type="number"], textarea {
-	padding: 8px 10px;
-	border-radius: 6px;
-	border: 2px solid var(--border);
-	font-family: inherit;
-	font-size: 14px;
-	background: white;
-	color: var(--text-dark);
-	font-weight: 500;
-}
-
-select:focus, input:focus, textarea:focus {
-	outline: none;
-	border-color: var(--primary);
-	box-shadow: 0 0 0 3px rgba(91, 124, 92, 0.12);
-}
-
+button,
+input,
+select,
 textarea {
-	resize: vertical;
-	min-height: 70px;
+	font: inherit;
+	color: inherit;
 }
 
-.selected-info {
-	font-size: 13px;
-	color: var(--text-muted);
-	margin-bottom: 8px;
+ul,
+ol {
+	list-style: none;
 }
 
-.action-buttons {
-	display: flex;
-	gap: 8px;
-	flex-wrap: wrap;
+/* キーボード操作のときだけ、はっきりした枠を出す */
+:focus-visible {
+	outline: 3px solid rgba(47, 107, 87, 0.5);
+	outline-offset: 2px;
 }
 
-.btn-action {
-	padding: 8px 12px;
-	font-size: 12px;
-	border-radius: 4px;
-	flex: 1;
-	min-width: 100px;
-}
+/* ===== ボタン ===== */
 
-.btn-checkout-multi {
-	background: var(--success);
-	color: white;
-}
-
-.btn-checkout-multi:hover {
-	background: #5a8e50;
-}
-
-.btn-delete-multi {
-	background: var(--error);
-	color: white;
-}
-
-.btn-delete-multi:hover {
-	background: #b04b43;
-}
-
-.btn-cancel {
-	background: var(--bg-light);
-	border: 1px solid var(--border);
-	color: var(--text-dark);
-}
-
-.btn-cancel:hover {
-	background: #f0ebe7;
-}
-
-.modal-overlay {
-	position: fixed;
-	top: 0;
-	left: 0;
-	right: 0;
-	bottom: 0;
-	background: rgba(0, 0, 0, 0.4);
-	display: flex;
+.btn {
+	display: inline-flex;
 	align-items: center;
 	justify-content: center;
-	z-index: 100;
-}
-
-.modal-content {
-	background: var(--bg-pale);
-	border-radius: 14px;
-	padding: 28px;
-	max-width: 600px;
-	max-height: 80vh;
-	overflow-y: auto;
-	box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18);
-	border: 2px solid var(--border);
-}
-
-.modal-content h3 {
-	font-size: 22px;
-	color: var(--text-dark);
-	margin-bottom: 20px;
-	margin-top: 0;
-	font-weight: 700;
-}
-
-@media (max-width: 640px) {
-	.card {
-		padding: 10px;
-	}
-}
-
-.selected-info {
-	font-size: 14px;
-	font-weight: 500;
-	color: var(--text-dark);
-}
-
-.action-buttons {
-	display: flex;
-	gap: 8px;
-}
-
-.btn-action {
-	padding: 8px 12px;
-	border: none;
-	border-radius: 4px;
-	font-size: 13px;
-	font-weight: 500;
+	gap: var(--space-2);
+	min-height: var(--control-md);
+	padding: 0 var(--space-4);
+	border: 1px solid transparent;
+	border-radius: var(--radius-md);
+	font-size: var(--font-md);
+	font-weight: 600;
+	line-height: 1.2;
+	white-space: nowrap;
 	cursor: pointer;
-	transition: all 0.2s ease;
+	user-select: none;
+	transition:
+		background-color 120ms ease,
+		border-color 120ms ease,
+		color 120ms ease;
 }
 
-.btn-action.btn-checkout-multi {
-	background: var(--success);
-	color: white;
+.btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
 }
 
-.btn-action.btn-checkout-multi:hover {
-	background: #5a8e52;
-	box-shadow: 0 2px 6px rgba(106, 159, 95, 0.3);
+.btn-primary {
+	background: var(--color-primary);
+	color: var(--color-text-on-primary);
 }
 
-.btn-action.btn-delete-multi {
-	background: var(--error);
-	color: white;
+.btn-primary:hover:not(:disabled) {
+	background: var(--color-primary-hover);
 }
 
-.btn-action.btn-delete-multi:hover {
-	background: #a74b44;
-	box-shadow: 0 2px 6px rgba(193, 92, 84, 0.3);
+.btn-secondary {
+	background: var(--color-surface);
+	border-color: var(--color-border-strong);
+	color: var(--color-text);
 }
 
-.btn-action.btn-cancel {
-	background: var(--text-muted);
-	color: white;
+.btn-secondary:hover:not(:disabled) {
+	background: var(--color-surface-muted);
+	border-color: var(--color-text-subtle);
 }
 
-.btn-action.btn-cancel:hover {
-	background: #6a6a6a;
-	box-shadow: 0 2px 6px rgba(122, 122, 122, 0.3);
+.btn-danger {
+	background: var(--color-surface);
+	border-color: var(--color-danger-border);
+	color: var(--color-danger);
+}
+
+.btn-danger:hover:not(:disabled) {
+	background: var(--color-danger-soft);
+	border-color: var(--color-danger);
+}
+
+.btn-ghost {
+	background: transparent;
+	color: var(--color-text-muted);
+}
+
+.btn-ghost:hover:not(:disabled) {
+	background: var(--color-surface-sunken);
+	color: var(--color-text);
+}
+
+.btn-sm {
+	min-height: var(--control-sm);
+	padding: 0 var(--space-3);
+	border-radius: var(--radius-sm);
+	font-size: var(--font-sm);
+}
+
+.btn-lg {
+	min-height: var(--control-lg);
+	padding: 0 var(--space-5);
+	font-size: var(--font-lg);
+}
+
+/* ===== 入力欄 ===== */
+
+.input,
+.select,
+.textarea {
+	width: 100%;
+	min-height: var(--control-md);
+	padding: 0 var(--space-3);
+	border: 1px solid var(--color-border-strong);
+	border-radius: var(--radius-md);
+	background: var(--color-surface);
+	font-size: var(--font-md);
+	transition:
+		border-color 120ms ease,
+		box-shadow 120ms ease;
+}
+
+.textarea {
+	min-height: 76px;
+	padding: var(--space-2) var(--space-3);
+	line-height: 1.5;
+	resize: vertical;
+}
+
+.input:hover,
+.select:hover,
+.textarea:hover {
+	border-color: var(--color-text-subtle);
+}
+
+.input:focus,
+.select:focus,
+.textarea:focus {
+	outline: none;
+	border-color: var(--color-primary);
+	box-shadow: var(--focus-ring);
+}
+
+.input::placeholder,
+.textarea::placeholder {
+	color: var(--color-text-subtle);
+}
+
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-2);
+}
+
+.field-label {
+	font-size: var(--font-sm);
+	font-weight: 700;
+	color: var(--color-text-muted);
+}
+
+/* ===== ラベル（状態の表示） ===== */
+
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-1);
+	padding: 2px 10px;
+	border-radius: var(--radius-full);
+	background: var(--color-surface-sunken);
+	color: var(--color-text-muted);
+	font-size: var(--font-sm);
+	font-weight: 700;
+	line-height: 1.6;
+	white-space: nowrap;
+}
+
+.chip-success {
+	background: var(--color-success-soft);
+	color: var(--color-success);
+}
+
+.chip-warning {
+	background: var(--color-warning-soft);
+	color: var(--color-warning);
+}
+
+.chip-danger {
+	background: var(--color-danger-soft);
+	color: var(--color-danger);
+}
+
+.chip-primary {
+	background: var(--color-primary-soft);
+	color: var(--color-primary);
+}
+
+.num {
+	font-variant-numeric: tabular-nums;
 }
