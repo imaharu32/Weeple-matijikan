@@ -1,6 +1,7 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "Weeple待ち時間",
+  "name": "ボドゲカフェ Weeple 待ち時間管理",
+  "lang": "ja",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +21,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#000000",
-  "background_color": "#ffffff"
+  "theme_color": "#5b7c5c",
+  "background_color": "#f5f3f0"
 }

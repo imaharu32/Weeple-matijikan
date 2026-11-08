@@ -21,22 +21,14 @@ export type Inside = {
 	seats: SeatDetail[]; // 座席詳細情報
 };
 
-export type Seat = {
-	id: string;
-	tableNumber: number; // テーブル番号
-	capacity: number; // 座席数
-	insideId?: string; // 現在座っているInside ID
-};
-
 /**
- * 1人単位の座席（新しい座席管理システム）
- * 6人席を6個の1人単位座席に分割して管理
+ * 1人単位の座席（6人テーブルを6つの席に分けて扱う）
  */
 export type UnitSeat = {
 	id: string; // "table_1_0" のような形（一意）
-	tableNumber: number; // 1-6（6人席 6個のテーブル番号）
-	seatIndex: number; // 0-5（テーブル内の座席インデックス）
-	occupiedByInsideId?: string; // 現在使用中の Inside ID（null なら空席）
+	tableNumber: number; // 1-6
+	seatIndex: number; // 0-5
+	occupiedByInsideId?: string; // 使用中の Inside ID
 };
 
 export type Course = {
@@ -50,27 +42,15 @@ export type HistoryEntry = {
 	size: number;
 	note?: string;
 	courseId?: string;
-	enterAt?: string; // ISO - optional if not available
-	exitAt: string; // ISO - when removed/checked out
-	seats: SeatDetail[]; // 座席詳細情報
+	enterAt?: string; // ISO
+	exitAt: string; // ISO - 退店（または削除）した時刻
+	seats: SeatDetail[];
 };
 
-export type Settings = {
-	maxCapacity: number;
-	seats?: Seat[];
-	/**
-	 * 人数ごとの座席占有範囲ルール
-	 * 例: { 1: { min: 1, max: 2 }, 2: { min: 2, max: 4 }, 3: { min: 3, max: 5 }, ... }
-	 * 1人客は1～2席の範囲で選択可、2人客は2～4席の範囲で選択可、など
-	 */
-	seatsRangePerPartySize?: Record<number, { min: number; max: number }>;
-};
+export type SeatsRange = { min: number; max: number };
 
-export type AppState = {
-	queue: Party[];
-	inside: Inside[];
-	courses: Course[];
-	history?: HistoryEntry[];
-	settings: Settings;
-	unitSeats?: UnitSeat[];
-};
+/**
+ * 人数ごとに使う席数の範囲
+ * 例: { 1: { min: 1, max: 2 }, 2: { min: 2, max: 4 }, ... }
+ */
+export type SeatsRangePerPartySize = Record<number, SeatsRange>;

@@ -1,146 +1,20 @@
 /**
- * 座席管理ユーティリティ
- * 1人単位の座席割当・解放・検索を管理
+ * 座席まわりのユーティリティ
  */
 
-import { UnitSeat, Inside } from '../types';
+import { DEFAULT_SEATS_RANGE_PER_PARTY_SIZE } from '../constants';
+import { Inside, SeatsRange, SeatsRangePerPartySize, UnitSeat } from '../types';
+
+const MAX_SEATS_PER_TABLE = 6;
 
 /**
- * 指定したテーブル内で、連続した N 個の空き座席を見つける
- * @param tableNumber - テーブル番号（1-6）
- * @param count - 必要な座席数（1-6）
- * @param unitSeats - 全座席リスト
- * @returns 見つかったら座席インデックスの開始位置、見つからなければ -1
- */
-export function findConsecutiveEmptySeatsInTable(
-	tableNumber: number,
-	count: number,
-	unitSeats: UnitSeat[]
-): number {
-	if (count < 1 || count > 6) return -1;
-
-	// 該当テーブルの座席を取得（seatIndex 順）
-	const tableSeats = unitSeats
-		.filter((s) => s.tableNumber === tableNumber)
-		.sort((a, b) => a.seatIndex - b.seatIndex);
-
-	// 連続した count 個の空き座席を探す
-	for (let i = 0; i <= 6 - count; i++) {
-		const consecutive = tableSeats.slice(i, i + count);
-		if (consecutive.every((s) => !s.occupiedByInsideId)) {
-			return i; // 見つかった
-		}
-	}
-	return -1; // 見つからない
-}
-
-/**
- * 指定したテーブルの連続した座席にパーティを割当
- * @param tableNumber - テーブル番号（1-6）
- * @param startSeatIndex - 開始座席インデックス（0-5）
- * @param count - 座席数（1-6）
- * @param insideId - 割当先の Inside ID
- * @param unitSeats - 全座席リスト（更新されます）
- * @returns 割当済みの座席リスト
- */
-export function assignSeatsToParty(
-	tableNumber: number,
-	startSeatIndex: number,
-	count: number,
-	insideId: string,
-	unitSeats: UnitSeat[]
-): UnitSeat[] {
-	const assigned: UnitSeat[] = [];
-
-	unitSeats.forEach((seat) => {
-		if (
-			seat.tableNumber === tableNumber &&
-			seat.seatIndex >= startSeatIndex &&
-			seat.seatIndex < startSeatIndex + count
-		) {
-			seat.occupiedByInsideId = insideId;
-			assigned.push(seat);
-		}
-	});
-
-	return assigned;
-}
-
-/**
- * 複数座席を任意に割り当てる（テーブルを跨いでも可）
- * @param seatIds - 割り当てる座席の id リスト
- */
-export function assignMultipleSeats(seatIds: string[], insideId: string, unitSeats: UnitSeat[]): UnitSeat[] {
-	const assigned: UnitSeat[] = [];
-	const idSet = new Set(seatIds);
-	unitSeats.forEach((seat) => {
-		if (idSet.has(seat.id)) {
-			seat.occupiedByInsideId = insideId;
-			assigned.push(seat);
-		}
-	});
-	return assigned;
-}
-
-/**
- * パーティが占有している座席を全て解放
- * @param insideId - Inside ID
- * @param unitSeats - 全座席リスト（更新されます）
- */
-export function releaseSeatsOfParty(insideId: string, unitSeats: UnitSeat[]): void {
-	unitSeats.forEach((seat) => {
-		if (seat.occupiedByInsideId === insideId) {
-			seat.occupiedByInsideId = undefined;
-		}
-	});
-}
-
-/**
- * テーブル内で割当可能な最小座席インデックスを探す
- * @param tableNumber
- * @param count - 必要な座席数
- * @param unitSeats
- * @returns インデックス（見つからなければ -1）
- */
-export function findFirstAvailableSeatsInTable(
-	tableNumber: number,
-	count: number,
-	unitSeats: UnitSeat[]
-): number {
-	return findConsecutiveEmptySeatsInTable(tableNumber, count, unitSeats);
-}
-
-/**
- * 全テーブルをスキャンして、最初に割当可能なテーブルを見つける
- * @param count - 必要な座席数
- * @param unitSeats
- * @returns { tableNumber, seatIndex } または null
- */
-export function findAvailableTable(
-	count: number,
-	unitSeats: UnitSeat[]
-): { tableNumber: number; seatIndex: number } | null {
-	for (let tableNum = 1; tableNum <= 6; tableNum++) {
-		const seatIndex = findConsecutiveEmptySeatsInTable(tableNum, count, unitSeats);
-		if (seatIndex >= 0) {
-			return { tableNumber: tableNum, seatIndex };
-		}
-	}
-	return null;
-}
-
-/**
- * テーブルの座席状況を取得（UI表示用）
- * @param tableNumber
- * @param unitSeats
- * @param inside - Inside リスト（滞在時間計算用）
- * @returns テーブル内の座席情報
+ * テーブルの座席状況（UI表示用）
  */
 export type TableSeatInfo = {
 	id: string;
 	seatIndex: number;
 	occupiedByInsideId?: string;
-	occupantSize?: number; // 座席グループの人数（複数座席は1つのInsideで共有）
+	occupantSize?: number; // 座っている組の人数（複数座席は1つのInsideで共有）
 	remainingMinutes?: number; // 残り滞在時間
 };
 
@@ -159,7 +33,6 @@ export function getTableSeatsInfo(
 			seatIndex: seat.seatIndex,
 		};
 
-		// Find which Inside group is using this seat
 		const insideUsingThisSeat = inside.find((insideEntry) =>
 			insideEntry.seats?.some((s) => s.id === seat.id)
 		);
@@ -167,9 +40,7 @@ export function getTableSeatsInfo(
 		if (insideUsingThisSeat) {
 			info.occupiedByInsideId = insideUsingThisSeat.id;
 			info.occupantSize = insideUsingThisSeat.size;
-			const now = Date.now();
-			const exitMs = new Date(insideUsingThisSeat.exitAt).getTime();
-			const remainMs = Math.max(0, exitMs - now);
+			const remainMs = Math.max(0, new Date(insideUsingThisSeat.exitAt).getTime() - Date.now());
 			info.remainingMinutes = Math.ceil(remainMs / 60000);
 		}
 
@@ -178,66 +49,47 @@ export function getTableSeatsInfo(
 }
 
 /**
- * 特定のInsideが使用している座席スパンを取得
- * @param insideId
- * @param inside Inside配列
- * @returns { tableNumber, startSeatIndex, count }
- */
-export function getSeatsOccupiedByInside(
-	insideId: string,
-	inside: Inside[]
-): { tableNumber: number; startSeatIndex: number; count: number } | null {
-	const insideEntry = inside.find((i) => i.id === insideId);
-	if (!insideEntry || !insideEntry.seats || insideEntry.seats.length === 0) return null;
-
-	const seats = insideEntry.seats;
-	// Assume all seats are in the same table for simplicity
-	const table = seats[0].tableNumber;
-	const indices = seats.map((s) => s.seatIndex).sort((a, b) => a - b);
-	const start = indices[0];
-	const count = indices.length;
-
-	return { tableNumber: table, startSeatIndex: start, count };
-}
-
-/**
- * デフォルトの人数別座席占有範囲を取得
- * デフォルト: 1人→1～2席、2人→2～4席など
- */
-export function getDefaultSeatsRangePerPartySize(): Record<number, { min: number; max: number }> {
-	return {
-		1: { min: 1, max: 2 },
-		2: { min: 2, max: 4 },
-		3: { min: 3, max: 5 },
-		4: { min: 4, max: 6 },
-		5: { min: 5, max: 6 },
-		6: { min: 6, max: 6 },
-	};
-}
-
-/**
- * 特定の人数に対して、座席選択可能な範囲を取得
- * @param partySize - パーティの人数
- * @param seatsRangePerPartySize - 人数別座席占有範囲ルール（指定なければデフォルト）
- * @returns { min, max } またはパーティサイズを上限とした範囲
+ * 人数に対して使える席数の範囲を返す
+ * @param seatsRangePerPartySize - 人数ごとのルール（省略時は初期ルール）
  */
 export function getSeatsRangeForPartySize(
 	partySize: number,
-	seatsRangePerPartySize?: Record<number, { min: number; max: number }>
-): { min: number; max: number } {
-	const rules = seatsRangePerPartySize || getDefaultSeatsRangePerPartySize();
-
-	if (rules[partySize]) {
-		const range = rules[partySize];
+	seatsRangePerPartySize: SeatsRangePerPartySize = DEFAULT_SEATS_RANGE_PER_PARTY_SIZE
+): SeatsRange {
+	const range = seatsRangePerPartySize[partySize];
+	if (range) {
 		return {
 			min: Math.max(1, range.min),
-			max: Math.min(6, range.max),
+			max: Math.min(MAX_SEATS_PER_TABLE, range.max),
 		};
 	}
 
-	// ルールがなければ、人数を上限とした範囲
+	// ルールがなければ、人数〜人数+2席
 	return {
 		min: Math.max(1, partySize),
-		max: Math.min(6, partySize + 2),
+		max: Math.min(MAX_SEATS_PER_TABLE, partySize + 2),
 	};
+}
+
+/**
+ * Firestore から読んだ座席ルールを検証する。
+ * 形が正しくない人数の分は初期ルールで補い、何も使えなければ null を返す。
+ */
+export function parseSeatsRangePerPartySize(data: unknown): SeatsRangePerPartySize | null {
+	if (!data || typeof data !== 'object') return null;
+
+	const result: SeatsRangePerPartySize = { ...DEFAULT_SEATS_RANGE_PER_PARTY_SIZE };
+	let found = false;
+
+	for (const [key, value] of Object.entries(data as Record<string, unknown>)) {
+		const partySize = Number(key);
+		if (!Number.isInteger(partySize) || partySize < 1) continue;
+		if (!value || typeof value !== 'object') continue;
+		const { min, max } = value as Record<string, unknown>;
+		if (typeof min !== 'number' || typeof max !== 'number' || min < 1 || max < min) continue;
+		result[partySize] = { min, max };
+		found = true;
+	}
+
+	return found ? result : null;
 }
