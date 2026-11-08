@@ -126,7 +126,7 @@ export function useShopData(shopId: string, notify: (message: string) => void) {
 		setInside((current) => [...current, newInside]);
 
 		try {
-			await api.movePartyToInside(shopId, party.id, newInside.id, { courseId, enterAt, exitAt, seats });
+			await api.movePartyToInside(shopId, party, newInside.id, { courseId, enterAt, exitAt, seats });
 		} catch (error) {
 			console.error('move to inside error', error);
 			setQueue(previousQueue);
@@ -154,7 +154,7 @@ export function useShopData(shopId: string, notify: (message: string) => void) {
 		setHistory((current) => [historyEntry, ...current]);
 
 		try {
-			await api.checkoutFromInside(shopId, insideId, historyEntry.exitAt);
+			await api.checkoutFromInside(shopId, entry, historyEntry.exitAt);
 		} catch (error) {
 			console.error('checkout error', error);
 			setInside(previousInside);
