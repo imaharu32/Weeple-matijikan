@@ -1,4 +1,5 @@
 import React, { CSSProperties } from 'react';
+import { SEATS_PER_TABLE, TABLE_COLUMNS, TABLE_COUNT } from '../constants';
 import { Inside, UnitSeat } from '../types';
 import { GroupColor, remainingStatus } from '../utils';
 import styles from './RoomDiagram.module.css';
@@ -24,11 +25,12 @@ type Props = {
 	onGroupClick?: (insideId: string) => void;
 };
 
-const TABLE_COUNT = 6;
-const SEATS_PER_TABLE = 6;
-/** テーブルの左側・右側に並ぶ席の番号（0始まり）。席番号は 1・2 が手前の行 */
-const LEFT_SEATS = [0, 2, 4];
-const RIGHT_SEATS = [1, 3, 5];
+/** テーブルの左側・右側に並ぶ席の番号（0始まり）。席番号は上の段から 1・2、3・4 … */
+const SEAT_INDEXES = Array.from({ length: SEATS_PER_TABLE }, (_, i) => i);
+const LEFT_SEATS = SEAT_INDEXES.filter((i) => i % 2 === 0);
+const RIGHT_SEATS = SEAT_INDEXES.filter((i) => i % 2 === 1);
+/** 配置の数字を CSS に渡す（テーブルの列数・1列あたりの席の段数） */
+const LAYOUT_VARS = { '--table-columns': TABLE_COLUMNS, '--seat-rows': LEFT_SEATS.length } as CSSProperties;
 
 const cx = (...names: Array<string | false | undefined>) => names.filter(Boolean).join(' ');
 
@@ -161,8 +163,13 @@ export default function RoomDiagram({
 	};
 
 	return (
-		<div className={styles.room}>
-			<div className={styles.shelf}>ボードゲーム棚</div>
+		<div className={styles.room} style={LAYOUT_VARS}>
+			<div className={styles.topBar}>
+				<div className={styles.shelf}>ボードゲーム棚</div>
+				<div className={styles.entrance}>
+					入口 <span aria-hidden>▼</span>
+				</div>
+			</div>
 			<div className={styles.floor}>
 				{Array.from({ length: TABLE_COUNT }, (_, t) => {
 					const tableNumber = t + 1;
@@ -221,9 +228,6 @@ export default function RoomDiagram({
 						</div>
 					);
 				})}
-			</div>
-			<div className={styles.entrance}>
-				<span aria-hidden>▼</span> 入口
 			</div>
 		</div>
 	);

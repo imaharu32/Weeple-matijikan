@@ -22,7 +22,7 @@ export type Inside = {
 };
 
 /**
- * 1人単位の座席（6人テーブルを6つの席に分けて扱う）
+ * 1人単位の座席（テーブルを1人分ずつの席に分けて扱う。配置は constants.ts）
  */
 export type UnitSeat = {
 	id: string; // "table_1_0" のような形（一意）

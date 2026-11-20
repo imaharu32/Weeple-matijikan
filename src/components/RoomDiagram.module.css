@@ -1,17 +1,27 @@
-/* 入口から見た店内。左にボードゲーム棚、テーブルは2列 × 3行、下が入口 */
+/*
+ * 店内の配置。上にボードゲーム棚、右上に入口、その下にテーブルが並ぶ。
+ * テーブルの列数（--table-columns）と席の段数（--seat-rows）は constants.ts の配置から渡される。
+ */
 .room {
-	display: grid;
-	grid-template-columns: 32px minmax(0, 1fr);
-	grid-template-rows: minmax(0, 1fr) auto;
+	/* 席の1辺の長さ（正方形） */
+	--seat-size: 56px;
+	display: flex;
+	flex-direction: column;
+	gap: var(--space-3);
+}
+
+.topBar {
+	display: flex;
+	align-items: stretch;
 	gap: var(--space-3);
 }
 
 .shelf {
-	grid-row: 1 / span 2;
+	flex: 1;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	writing-mode: vertical-rl;
+	padding: var(--space-1) var(--space-3);
 	letter-spacing: 0.3em;
 	background: var(--color-surface-sunken);
 	border-radius: var(--radius-sm);
@@ -22,12 +32,12 @@
 
 .floor {
 	display: grid;
-	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-columns: repeat(var(--table-columns, 2), minmax(0, 1fr));
 	gap: var(--space-2) var(--space-3);
 }
 
 .entrance {
-	justify-self: center;
+	flex-shrink: 0;
 	display: inline-flex;
 	align-items: center;
 	gap: var(--space-2);
@@ -73,13 +83,13 @@
 /* 席 | 天板 | 席 */
 .tableBody {
 	display: grid;
-	grid-template-columns: 44px minmax(0, 1fr) 44px;
+	grid-template-columns: var(--seat-size) minmax(0, 1fr) var(--seat-size);
 	gap: var(--space-2);
 }
 
 .seatColumn {
 	display: grid;
-	grid-template-rows: repeat(3, 38px);
+	grid-template-rows: repeat(var(--seat-rows, 3), var(--seat-size));
 	gap: 6px;
 }
 
@@ -103,7 +113,7 @@
 	justify-content: center;
 	border: 2px solid transparent;
 	border-radius: var(--radius-sm);
-	font-size: var(--font-md);
+	font-size: var(--font-lg);
 	font-weight: 800;
 	line-height: 1;
 	transition:
@@ -291,10 +301,13 @@
 	color: var(--color-danger);
 }
 
-/* 画面の高さが低いとき（ノートPCなど）は席を少し低くして、図全体が収まるようにする */
+/* 画面の高さが低いとき（ノートPCなど）は席を少し小さくして、図全体が収まるようにする */
 @media (max-height: 860px) {
+	.room {
+		--seat-size: 46px;
+	}
+
 	.seatColumn {
-		grid-template-rows: repeat(3, 30px);
 		gap: 4px;
 	}
 

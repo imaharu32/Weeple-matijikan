@@ -4,47 +4,6 @@
 
 import { Inside, UnitSeat } from '../types';
 
-/**
- * テーブルの座席状況（UI表示用）
- */
-export type TableSeatInfo = {
-	id: string;
-	seatIndex: number;
-	occupiedByInsideId?: string;
-	occupantSize?: number; // 座っている組の人数（複数座席は1つのInsideで共有）
-	remainingMinutes?: number; // 残り滞在時間
-};
-
-export function getTableSeatsInfo(
-	tableNumber: number,
-	unitSeats: UnitSeat[],
-	inside: Inside[]
-): TableSeatInfo[] {
-	const tableSeats = unitSeats
-		.filter((s) => s.tableNumber === tableNumber)
-		.sort((a, b) => a.seatIndex - b.seatIndex);
-
-	return tableSeats.map((seat) => {
-		const info: TableSeatInfo = {
-			id: seat.id,
-			seatIndex: seat.seatIndex,
-		};
-
-		const insideUsingThisSeat = inside.find((insideEntry) =>
-			insideEntry.seats?.some((s) => s.id === seat.id)
-		);
-
-		if (insideUsingThisSeat) {
-			info.occupiedByInsideId = insideUsingThisSeat.id;
-			info.occupantSize = insideUsingThisSeat.size;
-			const remainMs = Math.max(0, new Date(insideUsingThisSeat.exitAt).getTime() - Date.now());
-			info.remainingMinutes = Math.ceil(remainMs / 60000);
-		}
-
-		return info;
-	});
-}
-
 /** 使用中の席 id の一覧（ignoreInsideId の組の席は空席として扱う） */
 export function getOccupiedSeatIds(inside: Inside[], ignoreInsideId?: string): Set<string> {
 	const ids = new Set<string>();
