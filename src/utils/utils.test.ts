@@ -58,9 +58,9 @@ describe('groupHistoryByDate', () => {
 });
 
 describe('UNIT_SEATS', () => {
-	test('6テーブル × 6席 = 36席で、id が重ならない', () => {
-		expect(unitSeats).toHaveLength(36);
-		expect(new Set(unitSeats.map((s) => s.id)).size).toBe(36);
+	test('4人テーブル × 6 = 24席で、id が重ならない', () => {
+		expect(unitSeats).toHaveLength(24);
+		expect(new Set(unitSeats.map((s) => s.id)).size).toBe(24);
 	});
 });
 
@@ -69,14 +69,14 @@ describe('suggestSeats', () => {
 
 	test('1つのテーブルに収まるなら、ちょうど収まるテーブルの席を番号順に選ぶ', () => {
 		// テーブル1は残り2席、ほかは全部空き → 2名ならテーブル1の残り2席
-		const inside = [{ ...insideParty('i1', 4, 30), seats: [0, 1, 2, 3].map((i) => ({ id: `table_1_${i}`, tableNumber: 1, seatIndex: i })) }];
-		expect(suggestSeats(2, unitSeats, occupiedOf(inside))).toEqual(['table_1_4', 'table_1_5']);
+		const inside = [{ ...insideParty('i1', 2, 30), seats: [0, 1].map((i) => ({ id: `table_1_${i}`, tableNumber: 1, seatIndex: i })) }];
+		expect(suggestSeats(2, unitSeats, occupiedOf(inside))).toEqual(['table_1_2', 'table_1_3']);
 	});
 
 	test('どのテーブルにも収まらなければ、空きの多いテーブルから順に埋める', () => {
-		const result = suggestSeats(8, unitSeats, new Set());
-		expect(result).toHaveLength(8);
-		expect(result.slice(0, 6)).toEqual([0, 1, 2, 3, 4, 5].map((i) => `table_1_${i}`));
+		const result = suggestSeats(6, unitSeats, new Set());
+		expect(result).toHaveLength(6);
+		expect(result.slice(0, 4)).toEqual([0, 1, 2, 3].map((i) => `table_1_${i}`));
 	});
 
 	test('空席が足りなければ、選べた分だけ返す', () => {
@@ -121,40 +121,40 @@ describe('estimateWaitingTimeWithSeats', () => {
 	});
 
 	test('満席なら最初に空く時刻まで待つ', () => {
-		const inside = [insideParty('i1', 36, 20)];
+		const inside = [insideParty('i1', 24, 20)];
 		const result = estimateWaitingTimeWithSeats([party('p1', 2), party('p2', 2)], inside, unitSeats, courses);
 		expect(result).toEqual({ p1: 20, p2: 20 });
 	});
 
 	test('前の組が残りの席を使うと、次の組は「最短コース＋余裕15分」あとになる', () => {
-		const inside = [insideParty('i1', 34, 60)]; // 残り2席
+		const inside = [insideParty('i1', 22, 60)]; // 残り2席
 		const result = estimateWaitingTimeWithSeats([party('p1', 2), party('p2', 2)], inside, unitSeats, courses);
 		// p1 は今すぐ入店 → 30分コース＋余裕15分 = 45分後に2席が空く
 		expect(result).toEqual({ p1: 0, p2: 45 });
 	});
 
 	test('並んだ順に案内する（前の大人数の組が入るまで、後ろの組は入れない）', () => {
-		const inside = [insideParty('i1', 30, 60)]; // 6席空き
+		const inside = [insideParty('i1', 18, 60)]; // 6席空き
 		const result = estimateWaitingTimeWithSeats([party('big', 8), party('small', 2)], inside, unitSeats, courses);
 		expect(result).toEqual({ big: 60, small: 60 });
 	});
 
 	test('退店予定を過ぎた組の席は、もう空いているものとして扱う', () => {
-		const inside = [insideParty('i1', 4, -5), insideParty('i2', 32, 60)]; // 満席だが4席は5分超過
+		const inside = [insideParty('i1', 4, -5), insideParty('i2', 20, 60)]; // 満席だが4席は5分超過
 		expect(estimateForNewParty(2, [], inside, unitSeats, courses)).toBe(0);
 	});
 
 	test('全席数より多い組は全席を使うものとし、0分にしない', () => {
 		const inside = [insideParty('i1', 2, 20)];
 		const result = estimateWaitingTimeWithSeats([party('huge', 40), party('next', 2)], inside, unitSeats, courses);
-		// 40名は36席すべて空く20分後に入店 → 次の組はその45分後
+		// 40名は24席すべて空く20分後に入店 → 次の組はその45分後
 		expect(result).toEqual({ huge: 20, next: 65 });
 	});
 });
 
 describe('estimateForNewParty', () => {
 	test('今の列の後ろに並んだ場合の見込みを返す', () => {
-		const inside = [insideParty('i1', 36, 20)];
+		const inside = [insideParty('i1', 24, 20)];
 		expect(estimateForNewParty(4, [], inside, unitSeats, courses)).toBe(20);
 	});
 });
