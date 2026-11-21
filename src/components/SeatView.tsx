@@ -20,7 +20,7 @@ export default function SeatView({ unitSeats, inside, groupColors, onOpenInside 
 		<Panel
 			title="座席"
 			badge={`空き ${freeSeats}席`}
-			description="上がボードゲーム棚、右上が入口です。色の付いた席や組の名前をクリックすると詳細を開きます。"
+			description="右上が入口、下がボードゲーム棚です。色の付いた席や組の名前をクリックすると詳細を開きます。"
 			actions={
 				<div className={styles.legend} aria-label="凡例">
 					<span className={styles.legendItem}>
