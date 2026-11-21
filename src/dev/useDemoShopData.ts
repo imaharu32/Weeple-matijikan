@@ -25,12 +25,12 @@ function createSample() {
 		{ id: 'demo_i1', size: 2, note: '常連さん', courseId: 'c60', enterAt: minutesFromNow(-50), exitAt: minutesFromNow(25), seats: seats(1, 0, 1) },
 		{ id: 'demo_i2', size: 4, note: '家族（子ども2人）', courseId: 'c60', enterAt: minutesFromNow(-70), exitAt: minutesFromNow(5), seats: seats(2, 0, 1, 2, 3) },
 		{ id: 'demo_i3', size: 3, note: '', courseId: 'c30', enterAt: minutesFromNow(-50), exitAt: minutesFromNow(-5), seats: seats(3, 0, 1, 2) },
-		{ id: 'demo_i4', size: 5, note: '会社の同僚', courseId: 'c60', enterAt: minutesFromNow(-10), exitAt: minutesFromNow(65), seats: [...seats(5, 0, 1, 2, 3), ...seats(6, 0)] },
+		{ id: 'demo_i4', size: 5, note: '会社の同僚', courseId: 'c60', enterAt: minutesFromNow(-10), exitAt: minutesFromNow(65), seats: [...seats(5, 0, 1, 2, 3), ...seats(4, 1)] },
 		{ id: 'demo_i5', size: 1, note: '', courseId: 'c30', enterAt: minutesFromNow(-5), exitAt: minutesFromNow(40), seats: seats(4, 0) },
 	];
 	const history: HistoryEntry[] = [
 		{ id: 'demo_h1', size: 2, note: '', courseId: 'c30', enterAt: minutesFromNow(-120), exitAt: minutesFromNow(-75), seats: seats(1, 2, 3) },
-		{ id: 'demo_h2', size: 3, note: '友人', courseId: 'c60', enterAt: minutesFromNow(-180), exitAt: minutesFromNow(-105), seats: seats(6, 0, 1, 2) },
+		{ id: 'demo_h2', size: 3, note: '友人', courseId: 'c60', enterAt: minutesFromNow(-180), exitAt: minutesFromNow(-105), seats: seats(5, 0, 1, 2) },
 		{ id: 'demo_h3', size: 4, note: '', courseId: 'c60', enterAt: minutesFromNow(-24 * 60 - 120), exitAt: minutesFromNow(-24 * 60 - 45), seats: seats(2, 0, 1, 2, 3) },
 		{ id: 'demo_h4', size: 2, note: 'カップル', courseId: 'c30', enterAt: minutesFromNow(-24 * 60 - 200), exitAt: minutesFromNow(-24 * 60 - 155), seats: seats(4, 0, 1) },
 	];

@@ -19,16 +19,17 @@ export const HISTORY_DAYS = 30;
  * 配置が変わったら、ここの数字を書き換える（座席図・席選び・待ち時間の計算がまとめて切り替わる）。
  * - テーブルは TABLE_COLUMNS 列で並び、番号は左上から 1, 2 / 3, 4 / 5, 6 …
  * - 各テーブルの席は左右に半分ずつ並ぶ。席番号は上の段から「1 2」「3 4」…（左が奇数、右が偶数）
- * - 座席図の上にボードゲーム棚、右上に入口を表示する（RoomDiagram）
+ * - 座席図の右上に入口、一番下にボードゲーム棚を表示する（RoomDiagram）
+ * - テーブル数が列数で割り切れないときは、最後の段の左から詰めて並ぶ（今は 1 2 / 3 4 / 5）
  *
  * 注意: 席は "table_{テーブル番号}_{0始まりの席番号}" という id で店内の組に記録される。
  * 席数を減らすと、なくなった席に座っている組が座席図に出なくなるので、店内に組がいないときに切り替える。
  */
-export const TABLE_COUNT = 6;
+export const TABLE_COUNT = 5;
 export const SEATS_PER_TABLE = 4;
 export const TABLE_COLUMNS = 2;
 
-/** 店舗の全席数（4人席 × 6 = 24席） */
+/** 店舗の全席数（4人席 × 5 = 20席） */
 export const MAX_CAPACITY = TABLE_COUNT * SEATS_PER_TABLE;
 
 /** 1人単位の座席 */

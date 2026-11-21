@@ -165,7 +165,6 @@ export default function RoomDiagram({
 	return (
 		<div className={styles.room} style={LAYOUT_VARS}>
 			<div className={styles.topBar}>
-				<div className={styles.shelf}>ボードゲーム棚</div>
 				<div className={styles.entrance}>
 					入口 <span aria-hidden>▼</span>
 				</div>
@@ -229,6 +228,7 @@ export default function RoomDiagram({
 					);
 				})}
 			</div>
+			<div className={styles.shelf}>ボードゲーム棚</div>
 		</div>
 	);
 }

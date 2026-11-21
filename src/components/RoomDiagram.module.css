@@ -1,27 +1,25 @@
 /*
- * 店内の配置。上にボードゲーム棚、右上に入口、その下にテーブルが並ぶ。
+ * 店内の配置。右上に入口、その下にテーブルが並び、一番下にボードゲーム棚がある。
  * テーブルの列数（--table-columns）と席の段数（--seat-rows）は constants.ts の配置から渡される。
  */
 .room {
 	/* 席の1辺の長さ（正方形） */
-	--seat-size: 56px;
+	--seat-size: 52px;
 	display: flex;
 	flex-direction: column;
-	gap: var(--space-3);
+	gap: var(--space-2);
 }
 
 .topBar {
 	display: flex;
-	align-items: stretch;
-	gap: var(--space-3);
+	justify-content: flex-end;
 }
 
 .shelf {
-	flex: 1;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	padding: var(--space-1) var(--space-3);
+	padding: 2px var(--space-3);
 	letter-spacing: 0.3em;
 	background: var(--color-surface-sunken);
 	border-radius: var(--radius-sm);
@@ -41,12 +39,13 @@
 	display: inline-flex;
 	align-items: center;
 	gap: var(--space-2);
-	padding: 2px var(--space-4);
+	padding: 0 var(--space-3);
 	border: 1px dashed var(--color-border-strong);
 	border-radius: var(--radius-full);
 	color: var(--color-text-muted);
-	font-size: var(--font-sm);
+	font-size: var(--font-xs);
 	font-weight: 700;
+	line-height: 1.8;
 }
 
 /* ===== テーブル ===== */
@@ -304,7 +303,7 @@
 /* 画面の高さが低いとき（ノートPCなど）は席を少し小さくして、図全体が収まるようにする */
 @media (max-height: 860px) {
 	.room {
-		--seat-size: 46px;
+		--seat-size: 42px;
 	}
 
 	.seatColumn {
